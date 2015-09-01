@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+
+{% block content %}
+
+    <div class="panel panel-default">
+        <div class="panel-body">
+            {{ form_start(form, {'attr': {'class': 'form-inline'}}) }}
+
+            <div class="form-group">
+                {{ form_widget(form.task, {'attr': {'class': 'form-control', 'size': 60}}) }}
+            </div>
+            <button type="submit" class="btn btn-default">Create New Task</button>
+
+            {{ form_errors(form) }}
+            {{ form_end(form) }}
+        </div>
+    </div>
+
+    <div id="result"></div>
+
+    {% if tasks %}
+        <div class="panel panel-default">
+
+            <div class="list-group">
+                {% for task in tasks %}
+                <div class="list-group-item {% if task.done %}list-group-item-success{% endif %}" id="task-{{ task.id }}">
+                    <div class="checkbox">
+                        <span class="pull-right"><a href="{{ path('task_remove', {id: task.id}) }}"><span class="glyphicon glyphicon-trash"></span> </a></span>
+                        <label>
+                            <input type="checkbox" class="task" value="{{ task.id }}" {% if task.done %}checked="checked"{% endif %}> {{ task.task }}
+                        </label>
+                    </div>
+
+                </div>
+                {% endfor %}
+
+            </div>
+        </div>
+    {% else %}
+        <p>There are registered tasks at the moment. Create a new task in the form above.</p>
+    {% endif %}
+{% endblock %}
+
+
+{% block javascripts %}
+
+    <script type="text/javascript">
+
+        $(document).ready(function() {
+            $('.task').change(function() {
+                var task = $(this).val();
+
+                if($(this).is(":checked")) {
+                    $('#task-'+task)
+                            .addClass('list-group-item-success')
+                            .addClass('done-task');
+                } else {
+                    $('#task-'+task)
+                            .removeClass('list-group-item-success')
+                            .removeClass('done-task');
+                }
+
+                changeTaskStatus(task);
+            });
+        });
+
+        function changeTaskStatus(task) {
+            $.post('/change-status/' + task);
+        }
+    </script>
+{% endblock %}
