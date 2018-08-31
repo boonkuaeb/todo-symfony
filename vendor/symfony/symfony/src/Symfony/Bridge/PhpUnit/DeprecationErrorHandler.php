@@ -25,6 +25,20 @@ class DeprecationErrorHandler
         if (self::$isRegistered) {
             return;
         }
+
+        $getMode = function () use ($mode) {
+            static $memoizedMode = false;
+
+            if (false !== $memoizedMode) {
+                return $memoizedMode;
+            }
+            if (false === $mode) {
+                $mode = getenv('SYMFONY_DEPRECATIONS_HELPER') ?: '';
+            }
+
+            return $memoizedMode = $mode;
+        };
+
         $deprecations = array(
             'unsilencedCount' => 0,
             'remainingCount' => 0,
@@ -35,27 +49,36 @@ class DeprecationErrorHandler
             'legacy' => array(),
             'other' => array(),
         );
-        $deprecationHandler = function ($type, $msg, $file, $line, $context) use (&$deprecations, $mode) {
+        $deprecationHandler = function ($type, $msg, $file, $line, $context = array()) use (&$deprecations, $getMode) {
             if (E_USER_DEPRECATED !== $type) {
                 return \PHPUnit_Util_ErrorHandler::handleError($type, $msg, $file, $line, $context);
             }
 
-            $trace = debug_backtrace(PHP_VERSION_ID >= 50400 ? DEBUG_BACKTRACE_IGNORE_ARGS | DEBUG_BACKTRACE_PROVIDE_OBJECT : true);
+            $mode = $getMode();
+            $trace = debug_backtrace(true);
+            $group = 'other';
 
             $i = count($trace);
-            while (isset($trace[--$i]['class']) && ('ReflectionMethod' === $trace[$i]['class'] || 0 === strpos($trace[$i]['class'], 'PHPUnit_'))) {
+            while (1 < $i && (!isset($trace[--$i]['class']) || ('ReflectionMethod' === $trace[$i]['class'] || 0 === strpos($trace[$i]['class'], 'PHPUnit_')))) {
                 // No-op
             }
 
-            if (0 !== error_reporting()) {
-                $group = 'unsilenced';
-                $ref = &$deprecations[$group][$msg]['count'];
-                ++$ref;
-            } elseif (isset($trace[$i]['object']) || isset($trace[$i]['class'])) {
+            if (isset($trace[$i]['object']) || isset($trace[$i]['class'])) {
                 $class = isset($trace[$i]['object']) ? get_class($trace[$i]['object']) : $trace[$i]['class'];
                 $method = $trace[$i]['function'];
 
-                $group = 0 === strpos($method, 'testLegacy') || 0 === strpos($method, 'provideLegacy') || 0 === strpos($method, 'getLegacy') || strpos($class, '\Legacy') || in_array('legacy', \PHPUnit_Util_Test::getGroups($class, $method), true) ? 'legacy' : 'remaining';
+                if (0 !== error_reporting()) {
+                    $group = 'unsilenced';
+                } elseif (0 === strpos($method, 'testLegacy')
+                    || 0 === strpos($method, 'provideLegacy')
+                    || 0 === strpos($method, 'getLegacy')
+                    || strpos($class, '\Legacy')
+                    || in_array('legacy', \PHPUnit_Util_Test::getGroups($class, $method), true)
+                ) {
+                    $group = 'legacy';
+                } else {
+                    $group = 'remaining';
+                }
 
                 if ('legacy' !== $group && 'weak' !== $mode) {
                     $ref = &$deprecations[$group][$msg]['count'];
@@ -63,8 +86,7 @@ class DeprecationErrorHandler
                     $ref = &$deprecations[$group][$msg][$class.'::'.$method];
                     ++$ref;
                 }
-            } else {
-                $group = 'other';
+            } elseif ('weak' !== $mode) {
                 $ref = &$deprecations[$group][$msg]['count'];
                 ++$ref;
             }
@@ -87,12 +109,16 @@ class DeprecationErrorHandler
                     return "\x1B[{$color}m{$str}\x1B[0m";
                 };
             } else {
-                $colorize = function ($str) {return $str;};
+                $colorize = function ($str) { return $str; };
             }
-            register_shutdown_function(function () use ($mode, &$deprecations, $deprecationHandler, $colorize) {
+            register_shutdown_function(function () use ($getMode, &$deprecations, $deprecationHandler, $colorize) {
+                $mode = $getMode();
                 $currErrorHandler = set_error_handler('var_dump');
                 restore_error_handler();
 
+                if ('weak' === $mode) {
+                    $colorize = function ($str) { return $str; };
+                }
                 if ($currErrorHandler !== $deprecationHandler) {
                     echo "\n", $colorize('THE ERROR HANDLER HAS CHANGED!', true), "\n";
                 }
@@ -101,41 +127,89 @@ class DeprecationErrorHandler
                     return $b['count'] - $a['count'];
                 };
 
-                foreach (array('unsilenced', 'remaining', 'legacy', 'other') as $group) {
-                    if ($deprecations[$group.'Count']) {
-                        echo "\n", $colorize(sprintf('%s deprecation notices (%d)', ucfirst($group), $deprecations[$group.'Count']), 'legacy' !== $group), "\n";
+                $displayDeprecations = function ($deprecations) use ($colorize, $cmp) {
+                    foreach (array('unsilenced', 'remaining', 'legacy', 'other') as $group) {
+                        if ($deprecations[$group.'Count']) {
+                            echo "\n", $colorize(sprintf('%s deprecation notices (%d)', ucfirst($group), $deprecations[$group.'Count']), 'legacy' !== $group), "\n";
 
-                        uasort($deprecations[$group], $cmp);
+                            uasort($deprecations[$group], $cmp);
 
-                        foreach ($deprecations[$group] as $msg => $notices) {
-                            echo "\n", rtrim($msg, '.'), ': ', $notices['count'], "x\n";
+                            foreach ($deprecations[$group] as $msg => $notices) {
+                                echo "\n  ", $notices['count'], 'x: ', $msg, "\n";
 
-                            arsort($notices);
+                                arsort($notices);
 
-                            foreach ($notices as $method => $count) {
-                                if ('count' !== $method) {
-                                    echo '    ', $count, 'x in ', preg_replace('/(.*)\\\\(.*?::.*?)$/', '$2 from $1', $method), "\n";
+                                foreach ($notices as $method => $count) {
+                                    if ('count' !== $method) {
+                                        echo '    ', $count, 'x in ', preg_replace('/(.*)\\\\(.*?::.*?)$/', '$2 from $1', $method), "\n";
+                                    }
                                 }
                             }
                         }
                     }
+                    if (!empty($notices)) {
+                        echo "\n";
+                    }
+                };
+
+                $displayDeprecations($deprecations);
+
+                // store failing status
+                $isFailing = 'weak' !== $mode && ($deprecations['unsilenced'] || $deprecations['remaining'] || $deprecations['other']);
+
+                // reset deprecations array
+                foreach ($deprecations as $group => $arrayOrInt) {
+                    $deprecations[$group] = is_int($arrayOrInt) ? 0 : array();
                 }
-                if (!empty($notices)) {
-                    echo "\n";
-                }
-                if ('weak' !== $mode && ($deprecations['unsilenced'] || $deprecations['remaining'] || $deprecations['other'])) {
-                    exit(1);
-                }
+
+                register_shutdown_function(function () use (&$deprecations, $isFailing, $displayDeprecations, $mode) {
+                    foreach ($deprecations as $group => $arrayOrInt) {
+                        if (0 < (is_int($arrayOrInt) ? $arrayOrInt : count($arrayOrInt))) {
+                            echo "Shutdown-time deprecations:\n";
+                            break;
+                        }
+                    }
+                    $displayDeprecations($deprecations);
+                    if ($isFailing || 'weak' !== $mode && ($deprecations['unsilenced'] || $deprecations['remaining'] || $deprecations['other'])) {
+                        exit(1);
+                    }
+                });
             });
         }
     }
 
+    /**
+     * Returns true if STDOUT is defined and supports colorization.
+     *
+     * Reference: Composer\XdebugHandler\Process::supportsColor
+     * https://github.com/composer/xdebug-handler
+     *
+     * @return bool
+     */
     private static function hasColorSupport()
     {
-        if ('\\' === DIRECTORY_SEPARATOR) {
-            return false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI');
+        if (!defined('STDOUT')) {
+            return false;
         }
 
-        return defined('STDOUT') && function_exists('posix_isatty') && @posix_isatty(STDOUT);
+        if (DIRECTORY_SEPARATOR === '\\') {
+            return (function_exists('sapi_windows_vt100_support')
+                && sapi_windows_vt100_support(STDOUT))
+                || false !== getenv('ANSICON')
+                || 'ON' === getenv('ConEmuANSI')
+                || 'xterm' === getenv('TERM');
+        }
+
+        if (function_exists('stream_isatty')) {
+            return stream_isatty(STDOUT);
+        }
+
+        if (function_exists('posix_isatty')) {
+            return posix_isatty(STDOUT);
+        }
+
+        $stat = fstat(STDOUT);
+        // Check if formatted mode is S_IFCHR
+        return $stat ? 0020000 === ($stat['mode'] & 0170000) : false;
     }
 }

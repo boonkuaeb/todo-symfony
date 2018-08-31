@@ -28,9 +28,6 @@ use Symfony\Component\CssSelector\Parser\ParserInterface;
  */
 class Translator implements TranslatorInterface
 {
-    /**
-     * @var ParserInterface
-     */
     private $mainParser;
 
     /**
@@ -39,38 +36,16 @@ class Translator implements TranslatorInterface
     private $shortcutParsers = array();
 
     /**
-     * @var Extension\ExtensionInterface
+     * @var Extension\ExtensionInterface[]
      */
     private $extensions = array();
 
-    /**
-     * @var array
-     */
     private $nodeTranslators = array();
-
-    /**
-     * @var array
-     */
     private $combinationTranslators = array();
-
-    /**
-     * @var array
-     */
     private $functionTranslators = array();
-
-    /**
-     * @var array
-     */
     private $pseudoClassTranslators = array();
-
-    /**
-     * @var array
-     */
     private $attributeMatchingTranslators = array();
 
-    /**
-     * Constructor.
-     */
     public function __construct(ParserInterface $parser = null)
     {
         $this->mainParser = $parser ?: new Parser();
@@ -145,9 +120,7 @@ class Translator implements TranslatorInterface
     /**
      * Registers an extension.
      *
-     * @param Extension\ExtensionInterface $extension
-     *
-     * @return Translator
+     * @return $this
      */
     public function registerExtension(Extension\ExtensionInterface $extension)
     {
@@ -181,9 +154,7 @@ class Translator implements TranslatorInterface
     /**
      * Registers a shortcut parser.
      *
-     * @param ParserInterface $shortcut
-     *
-     * @return Translator
+     * @return $this
      */
     public function registerParserShortcut(ParserInterface $shortcut)
     {
@@ -193,8 +164,6 @@ class Translator implements TranslatorInterface
     }
 
     /**
-     * @param NodeInterface $node
-     *
      * @return XPathExpr
      *
      * @throws ExpressionErrorException
@@ -227,9 +196,6 @@ class Translator implements TranslatorInterface
     }
 
     /**
-     * @param XPathExpr    $xpath
-     * @param FunctionNode $function
-     *
      * @return XPathExpr
      *
      * @throws ExpressionErrorException
@@ -266,9 +232,9 @@ class Translator implements TranslatorInterface
      * @param string    $attribute
      * @param string    $value
      *
-     * @throws ExpressionErrorException
-     *
      * @return XPathExpr
+     *
+     * @throws ExpressionErrorException
      */
     public function addAttributeMatching(XPathExpr $xpath, $operator, $attribute, $value)
     {

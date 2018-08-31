@@ -11,6 +11,7 @@
 
 namespace Symfony\Bridge\ProxyManager\Tests\LazyProxy\Instantiator;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\ProxyManager\LazyProxy\Instantiator\RuntimeInstantiator;
 use Symfony\Component\DependencyInjection\Definition;
 
@@ -18,10 +19,8 @@ use Symfony\Component\DependencyInjection\Definition;
  * Tests for {@see \Symfony\Bridge\ProxyManager\LazyProxy\Instantiator\RuntimeInstantiator}.
  *
  * @author Marco Pivetta <ocramius@gmail.com>
- *
- * @covers \Symfony\Bridge\ProxyManager\LazyProxy\Instantiator\RuntimeInstantiator
  */
-class RuntimeInstantiatorTest extends \PHPUnit_Framework_TestCase
+class RuntimeInstantiatorTest extends TestCase
 {
     /**
      * @var RuntimeInstantiator
@@ -39,7 +38,7 @@ class RuntimeInstantiatorTest extends \PHPUnit_Framework_TestCase
     public function testInstantiateProxy()
     {
         $instance = new \stdClass();
-        $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
+        $container = $this->getMockBuilder('Symfony\Component\DependencyInjection\ContainerInterface')->getMock();
         $definition = new Definition('stdClass');
         $instantiator = function () use ($instance) {
             return $instance;

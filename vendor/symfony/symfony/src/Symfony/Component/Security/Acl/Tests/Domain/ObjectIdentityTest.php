@@ -11,9 +11,11 @@
 
 namespace Symfony\Component\Security\Acl\Tests\Domain
 {
+    use PHPUnit\Framework\TestCase;
     use Symfony\Component\Security\Acl\Domain\ObjectIdentity;
+    use Symfony\Component\Security\Acl\Model\DomainObjectInterface;
 
-    class ObjectIdentityTest extends \PHPUnit_Framework_TestCase
+    class ObjectIdentityTest extends TestCase
     {
         public function testConstructor()
         {
@@ -34,17 +36,7 @@ namespace Symfony\Component\Security\Acl\Tests\Domain
 
         public function testFromDomainObjectPrefersInterfaceOverGetId()
         {
-            $domainObject = $this->getMock('Symfony\Component\Security\Acl\Model\DomainObjectInterface');
-            $domainObject
-                ->expects($this->once())
-                ->method('getObjectIdentifier')
-                ->will($this->returnValue('getObjectIdentifier()'))
-            ;
-            $domainObject
-                ->expects($this->never())
-                ->method('getId')
-                ->will($this->returnValue('getId()'))
-            ;
+            $domainObject = new DomainObjectImplementation();
 
             $id = ObjectIdentity::fromDomainObject($domainObject);
             $this->assertEquals('getObjectIdentifier()', $id->getIdentifier());
@@ -121,11 +113,26 @@ namespace Symfony\Component\Security\Acl\Tests\Domain
             return $this->id;
         }
     }
+
+    class DomainObjectImplementation implements DomainObjectInterface
+    {
+        public function getObjectIdentifier()
+        {
+            return 'getObjectIdentifier()';
+        }
+
+        public function getId()
+        {
+            return 'getId()';
+        }
+    }
 }
 
 namespace Acme\DemoBundle\Proxy\__CG__\Symfony\Component\Security\Acl\Tests\Domain
 {
-    class TestDomainObject extends \Symfony\Component\Security\Acl\Tests\Domain\TestDomainObject
+    use Symfony\Component\Security\Acl\Tests\Domain\TestDomainObject as BaseTestDomainObject;
+
+    class TestDomainObject extends BaseTestDomainObject
     {
     }
 }

@@ -11,11 +11,12 @@
 
 namespace Symfony\Component\Validator\Tests\Mapping\Loader;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Mapping\Loader\StaticMethodLoader;
 use Symfony\Component\Validator\Tests\Fixtures\ConstraintA;
 
-class StaticMethodLoaderTest extends \PHPUnit_Framework_TestCase
+class StaticMethodLoaderTest extends TestCase
 {
     private $errorLevel;
 
@@ -93,10 +94,6 @@ class StaticMethodLoaderTest extends \PHPUnit_Framework_TestCase
         // Disable error reporting, as AbstractStaticMethodLoader produces a
         // strict standards error
         error_reporting(0);
-
-        if (0 !== error_reporting()) {
-            $this->markTestSkipped('Could not disable error reporting');
-        }
 
         $metadata = new ClassMetadata(__NAMESPACE__.'\AbstractStaticMethodLoader');
 

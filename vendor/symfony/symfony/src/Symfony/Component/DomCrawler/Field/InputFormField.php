@@ -18,8 +18,6 @@ namespace Symfony\Component\DomCrawler\Field;
  * specialized classes (cf. FileFormField and ChoiceFormField).
  *
  * @author Fabien Potencier <fabien@symfony.com>
- *
- * @api
  */
 class InputFormField extends FormField
 {
@@ -34,11 +32,12 @@ class InputFormField extends FormField
             throw new \LogicException(sprintf('An InputFormField can only be created from an input or button tag (%s given).', $this->node->nodeName));
         }
 
-        if ('checkbox' === strtolower($this->node->getAttribute('type'))) {
+        $type = strtolower($this->node->getAttribute('type'));
+        if ('checkbox' === $type) {
             throw new \LogicException('Checkboxes should be instances of ChoiceFormField.');
         }
 
-        if ('file' === strtolower($this->node->getAttribute('type'))) {
+        if ('file' === $type) {
             throw new \LogicException('File inputs should be instances of FileFormField.');
         }
 

@@ -24,8 +24,6 @@ use Symfony\Component\ExpressionLanguage\Expression;
  * YamlDumper dumps a service container as a YAML string.
  *
  * @author Fabien Potencier <fabien@symfony.com>
- *
- * @api
  */
 class YamlDumper extends Dumper
 {
@@ -34,11 +32,7 @@ class YamlDumper extends Dumper
     /**
      * Dumps the service container as an YAML string.
      *
-     * @param array $options An array of options
-     *
      * @return string A YAML string representing of the service container
-     *
-     * @api
      */
     public function dump(array $options = array())
     {
@@ -61,11 +55,15 @@ class YamlDumper extends Dumper
      *
      * @return string
      */
-    private function addService($id, $definition)
+    private function addService($id, Definition $definition)
     {
         $code = "    $id:\n";
-        if ($definition->getClass()) {
-            $code .= sprintf("        class: %s\n", $definition->getClass());
+        if ($class = $definition->getClass()) {
+            if ('\\' === substr($class, 0, 1)) {
+                $class = substr($class, 1);
+            }
+
+            $code .= sprintf("        class: %s\n", $this->dumper->dump($class));
         }
 
         if (!$definition->isPublic()) {
@@ -89,31 +87,35 @@ class YamlDumper extends Dumper
         }
 
         if ($definition->getFile()) {
-            $code .= sprintf("        file: %s\n", $definition->getFile());
+            $code .= sprintf("        file: %s\n", $this->dumper->dump($definition->getFile()));
         }
 
         if ($definition->isSynthetic()) {
-            $code .= sprintf("        synthetic: true\n");
+            $code .= "        synthetic: true\n";
         }
 
         if ($definition->isSynchronized(false)) {
-            $code .= sprintf("        synchronized: true\n");
+            $code .= "        synchronized: true\n";
         }
 
         if ($definition->getFactoryClass(false)) {
-            $code .= sprintf("        factory_class: %s\n", $definition->getFactoryClass(false));
+            $code .= sprintf("        factory_class: %s\n", $this->dumper->dump($definition->getFactoryClass(false)));
+        }
+
+        if ($definition->isAbstract()) {
+            $code .= "        abstract: true\n";
         }
 
         if ($definition->isLazy()) {
-            $code .= sprintf("        lazy: true\n");
+            $code .= "        lazy: true\n";
         }
 
         if ($definition->getFactoryMethod(false)) {
-            $code .= sprintf("        factory_method: %s\n", $definition->getFactoryMethod(false));
+            $code .= sprintf("        factory_method: %s\n", $this->dumper->dump($definition->getFactoryMethod(false)));
         }
 
         if ($definition->getFactoryService(false)) {
-            $code .= sprintf("        factory_service: %s\n", $definition->getFactoryService(false));
+            $code .= sprintf("        factory_service: %s\n", $this->dumper->dump($definition->getFactoryService(false)));
         }
 
         if ($definition->getArguments()) {
@@ -129,7 +131,7 @@ class YamlDumper extends Dumper
         }
 
         if (ContainerInterface::SCOPE_CONTAINER !== $scope = $definition->getScope()) {
-            $code .= sprintf("        scope: %s\n", $scope);
+            $code .= sprintf("        scope: %s\n", $this->dumper->dump($scope));
         }
 
         if (null !== $decorated = $definition->getDecoratedService()) {
@@ -159,13 +161,13 @@ class YamlDumper extends Dumper
      *
      * @return string
      */
-    private function addServiceAlias($alias, $id)
+    private function addServiceAlias($alias, Alias $id)
     {
         if ($id->isPublic()) {
-            return sprintf("    %s: @%s\n", $alias, $id);
-        } else {
-            return sprintf("    %s:\n        alias: %s\n        public: false", $alias, $id);
+            return sprintf("    %s: '@%s'\n", $alias, $id);
         }
+
+        return sprintf("    %s:\n        alias: %s\n        public: false\n", $alias, $id);
     }
 
     /**
@@ -212,7 +214,7 @@ class YamlDumper extends Dumper
     }
 
     /**
-     * Dumps callable to YAML format
+     * Dumps callable to YAML format.
      *
      * @param callable $callable
      *
@@ -304,7 +306,7 @@ class YamlDumper extends Dumper
      *
      * @return array
      */
-    private function prepareParameters($parameters, $escape = true)
+    private function prepareParameters(array $parameters, $escape = true)
     {
         $filtered = array();
         foreach ($parameters as $key => $value) {
@@ -323,11 +325,9 @@ class YamlDumper extends Dumper
     /**
      * Escapes arguments.
      *
-     * @param array $arguments
-     *
      * @return array
      */
-    private function escape($arguments)
+    private function escape(array $arguments)
     {
         $args = array();
         foreach ($arguments as $k => $v) {

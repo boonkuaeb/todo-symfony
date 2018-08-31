@@ -11,25 +11,26 @@
 
 namespace Symfony\Component\HttpFoundation\Tests\Session\Storage;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
 
 /**
  * Test class for MetadataBag.
+ *
+ * @group time-sensitive
  */
-class MetadataBagTest extends \PHPUnit_Framework_TestCase
+class MetadataBagTest extends TestCase
 {
     /**
      * @var MetadataBag
      */
     protected $bag;
 
-    /**
-     * @var array
-     */
     protected $array = array();
 
     protected function setUp()
     {
+        parent::setUp();
         $this->bag = new MetadataBag();
         $this->array = array(MetadataBag::CREATED => 1234567, MetadataBag::UPDATED => 12345678, MetadataBag::LIFETIME => 0);
         $this->bag->initialize($this->array);
@@ -39,6 +40,7 @@ class MetadataBagTest extends \PHPUnit_Framework_TestCase
     {
         $this->array = array();
         $this->bag = null;
+        parent::tearDown();
     }
 
     public function testInitialize()
@@ -98,6 +100,9 @@ class MetadataBagTest extends \PHPUnit_Framework_TestCase
     public function testClear()
     {
         $this->bag->clear();
+
+        // the clear method has no side effects, we just want to ensure it doesn't trigger any exceptions
+        $this->addToAssertionCount(1);
     }
 
     public function testSkipLastUsedUpdate()

@@ -19,33 +19,19 @@ use Symfony\Component\EventDispatcher\Event;
  * Base class for events thrown in the HttpKernel component.
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
- *
- * @api
  */
 class KernelEvent extends Event
 {
-    /**
-     * The kernel in which this event was thrown.
-     *
-     * @var HttpKernelInterface
-     */
     private $kernel;
-
-    /**
-     * The request the kernel is currently processing.
-     *
-     * @var Request
-     */
     private $request;
-
-    /**
-     * The request type the kernel is currently processing.  One of
-     * HttpKernelInterface::MASTER_REQUEST and HttpKernelInterface::SUB_REQUEST.
-     *
-     * @var int
-     */
     private $requestType;
 
+    /**
+     * @param HttpKernelInterface $kernel      The kernel in which this event was thrown
+     * @param Request             $request     The request the kernel is currently processing
+     * @param int                 $requestType The request type the kernel is currently processing; one of
+     *                                         HttpKernelInterface::MASTER_REQUEST or HttpKernelInterface::SUB_REQUEST
+     */
     public function __construct(HttpKernelInterface $kernel, Request $request, $requestType)
     {
         $this->kernel = $kernel;
@@ -57,8 +43,6 @@ class KernelEvent extends Event
      * Returns the kernel in which this event was thrown.
      *
      * @return HttpKernelInterface
-     *
-     * @api
      */
     public function getKernel()
     {
@@ -69,8 +53,6 @@ class KernelEvent extends Event
      * Returns the request the kernel is currently processing.
      *
      * @return Request
-     *
-     * @api
      */
     public function getRequest()
     {
@@ -82,8 +64,6 @@ class KernelEvent extends Event
      *
      * @return int One of HttpKernelInterface::MASTER_REQUEST and
      *             HttpKernelInterface::SUB_REQUEST
-     *
-     * @api
      */
     public function getRequestType()
     {
@@ -94,8 +74,6 @@ class KernelEvent extends Event
      * Checks if this is a master request.
      *
      * @return bool True if the request is a master request
-     *
-     * @api
      */
     public function isMasterRequest()
     {

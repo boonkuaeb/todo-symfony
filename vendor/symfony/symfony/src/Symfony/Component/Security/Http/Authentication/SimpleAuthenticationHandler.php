@@ -19,7 +19,7 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authentication\SimpleAuthenticatorInterface;
 
 /**
- * Class to proxy authentication success/failure handlers
+ * Class to proxy authentication success/failure handlers.
  *
  * Events are sent to the SimpleAuthenticatorInterface if it implements
  * the right interface, otherwise (or if it fails to return a Response)
@@ -35,8 +35,6 @@ class SimpleAuthenticationHandler implements AuthenticationFailureHandlerInterfa
     protected $logger;
 
     /**
-     * Constructor.
-     *
      * @param SimpleAuthenticatorInterface          $authenticator  SimpleAuthenticatorInterface instance
      * @param AuthenticationSuccessHandlerInterface $successHandler Default success handler
      * @param AuthenticationFailureHandlerInterface $failureHandler Default failure handler

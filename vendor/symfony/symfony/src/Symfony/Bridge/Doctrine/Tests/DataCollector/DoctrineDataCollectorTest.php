@@ -12,11 +12,12 @@
 namespace Symfony\Bridge\Doctrine\Tests\DataCollector;
 
 use Doctrine\DBAL\Platforms\MySqlPlatform;
+use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\Doctrine\DataCollector\DoctrineDataCollector;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class DoctrineDataCollectorTest extends \PHPUnit_Framework_TestCase
+class DoctrineDataCollectorTest extends TestCase
 {
     public function testCollectConnections()
     {
@@ -79,9 +80,25 @@ class DoctrineDataCollectorTest extends \PHPUnit_Framework_TestCase
         $c = $this->createCollector($queries);
         $c->collect(new Request(), new Response());
 
-        $collected_queries = $c->getQueries();
-        $this->assertEquals($expected, $collected_queries['default'][0]['params'][0]);
-        $this->assertEquals($explainable, $collected_queries['default'][0]['explainable']);
+        $collectedQueries = $c->getQueries();
+        $this->assertEquals($expected, $collectedQueries['default'][0]['params'][0]);
+        $this->assertEquals($explainable, $collectedQueries['default'][0]['explainable']);
+    }
+
+    public function testCollectQueryWithNoParams()
+    {
+        $queries = array(
+            array('sql' => 'SELECT * FROM table1', 'params' => array(), 'types' => array(), 'executionMS' => 1),
+            array('sql' => 'SELECT * FROM table1', 'params' => null, 'types' => null, 'executionMS' => 1),
+        );
+        $c = $this->createCollector($queries);
+        $c->collect(new Request(), new Response());
+
+        $collectedQueries = $c->getQueries();
+        $this->assertEquals(array(), $collectedQueries['default'][0]['params']);
+        $this->assertTrue($collectedQueries['default'][0]['explainable']);
+        $this->assertEquals(array(), $collectedQueries['default'][1]['params']);
+        $this->assertTrue($collectedQueries['default'][1]['explainable']);
     }
 
     /**
@@ -96,9 +113,9 @@ class DoctrineDataCollectorTest extends \PHPUnit_Framework_TestCase
         $c->collect(new Request(), new Response());
         $c = unserialize(serialize($c));
 
-        $collected_queries = $c->getQueries();
-        $this->assertEquals($expected, $collected_queries['default'][0]['params'][0]);
-        $this->assertEquals($explainable, $collected_queries['default'][0]['explainable']);
+        $collectedQueries = $c->getQueries();
+        $this->assertEquals($expected, $collectedQueries['default'][0]['params'][0]);
+        $this->assertEquals($explainable, $collectedQueries['default'][0]['explainable']);
     }
 
     public function paramProvider()
@@ -123,20 +140,20 @@ class DoctrineDataCollectorTest extends \PHPUnit_Framework_TestCase
             ->method('getDatabasePlatform')
             ->will($this->returnValue(new MySqlPlatform()));
 
-        $registry = $this->getMock('Doctrine\Common\Persistence\ManagerRegistry');
+        $registry = $this->getMockBuilder('Doctrine\Common\Persistence\ManagerRegistry')->getMock();
         $registry
-                ->expects($this->any())
-                ->method('getConnectionNames')
-                ->will($this->returnValue(array('default' => 'doctrine.dbal.default_connection')));
+            ->expects($this->any())
+            ->method('getConnectionNames')
+            ->will($this->returnValue(array('default' => 'doctrine.dbal.default_connection')));
         $registry
-                ->expects($this->any())
-                ->method('getManagerNames')
-                ->will($this->returnValue(array('default' => 'doctrine.orm.default_entity_manager')));
+            ->expects($this->any())
+            ->method('getManagerNames')
+            ->will($this->returnValue(array('default' => 'doctrine.orm.default_entity_manager')));
         $registry->expects($this->any())
             ->method('getConnection')
             ->will($this->returnValue($connection));
 
-        $logger = $this->getMock('Doctrine\DBAL\Logging\DebugStack');
+        $logger = $this->getMockBuilder('Doctrine\DBAL\Logging\DebugStack')->getMock();
         $logger->queries = $queries;
 
         $collector = new DoctrineDataCollector($registry);

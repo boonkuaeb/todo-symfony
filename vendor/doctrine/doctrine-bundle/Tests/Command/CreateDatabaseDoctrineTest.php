@@ -20,14 +20,20 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 class CreateDatabaseDoctrineTest extends \PHPUnit_Framework_TestCase
 {
+    public function tearDown()
+    {
+        @unlink(sys_get_temp_dir() . "/test");
+        @unlink(sys_get_temp_dir() . "/shard_1");
+        @unlink(sys_get_temp_dir() . "/shard_2");
+    }
+
     public function testExecute()
     {
         $connectionName = 'default';
         $dbName = 'test';
         $params = array(
-            'dbname' => $dbName,
-            'memory' => true,
-            'driver' => 'pdo_sqlite'
+            'path' => sys_get_temp_dir() . "/" . $dbName,
+            'driver' => 'pdo_sqlite',
         );
 
         $application = new Application();
@@ -41,16 +47,57 @@ class CreateDatabaseDoctrineTest extends \PHPUnit_Framework_TestCase
             array_merge(array('command' => $command->getName()))
         );
 
-        $this->assertContains("Created database \"$dbName\" for connection named $connectionName", $commandTester->getDisplay());
+        $this->assertContains("Created database " . sys_get_temp_dir() . "/" . $dbName . " for connection named $connectionName", $commandTester->getDisplay());
     }
 
+    public function testExecuteWithShardOption()
+    {
+        $connectionName = 'default';
+        $params = array(
+            'dbname' => 'test',
+            'memory' => true,
+            'driver' => 'pdo_sqlite',
+            'global' => array(
+                'driver' => 'pdo_sqlite',
+                'dbname' => 'test',
+            ),
+            'shards' => array(
+                'foo' => array(
+                    'id' => 1,
+                    'path' => sys_get_temp_dir() . '/shard_1',
+                    'driver' => 'pdo_sqlite',
+                ),
+                'bar' => array(
+                    'id' => 2,
+                    'path' => sys_get_temp_dir() . '/shard_2',
+                    'driver' => 'pdo_sqlite',
+                ),
+            )
+        );
+
+        $application = new Application();
+        $application->add(new CreateDatabaseDoctrineCommand());
+
+        $command = $application->find('doctrine:database:create');
+        $command->setContainer($this->getMockContainer($connectionName, $params));
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array('command' => $command->getName(), '--shard' => 1));
+
+        $this->assertContains("Created database " . sys_get_temp_dir() ."/shard_1 for connection named $connectionName", $commandTester->getDisplay());
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array('command' => $command->getName(), '--shard' => 2));
+
+        $this->assertContains("Created database " . sys_get_temp_dir() ."/shard_2 for connection named $connectionName", $commandTester->getDisplay());
+    }
 
     /**
-     * @param $connectionName
-     * @param null $params Connection parameters
+     * @param string     $connectionName Connection name
+     * @param array|null $params         Connection parameters
      * @return \PHPUnit_Framework_MockObject_MockObject
      */
-    private function getMockContainer($connectionName, $params=null)
+    private function getMockContainer($connectionName, $params = null)
     {
         // Mock the container and everything you'll need here
         $mockDoctrine = $this->getMockBuilder('Doctrine\Common\Persistence\ConnectionRegistry')
@@ -59,9 +106,7 @@ class CreateDatabaseDoctrineTest extends \PHPUnit_Framework_TestCase
         $mockDoctrine->expects($this->any())
             ->method('getDefaultConnectionName')
             ->withAnyParameters()
-            ->willReturn($connectionName)
-        ;
-
+            ->willReturn($connectionName);
 
         $mockConnection = $this->getMockBuilder('Doctrine\DBAL\Connection')
             ->disableOriginalConstructor()
@@ -73,13 +118,10 @@ class CreateDatabaseDoctrineTest extends \PHPUnit_Framework_TestCase
             ->withAnyParameters()
             ->willReturn($params);
 
-        
         $mockDoctrine->expects($this->any())
             ->method('getConnection')
             ->withAnyParameters()
             ->willReturn($mockConnection);
-        ;
-
 
         $mockContainer = $this->getMockBuilder('Symfony\Component\DependencyInjection\Container')
             ->setMethods(array('get'))

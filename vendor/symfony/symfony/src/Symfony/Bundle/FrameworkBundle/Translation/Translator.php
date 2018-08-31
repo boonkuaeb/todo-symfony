@@ -38,6 +38,14 @@ class Translator extends BaseTranslator implements WarmableInterface
     private $resourceLocales;
 
     /**
+     * Holds parameters from addResource() calls so we can defer the actual
+     * parent::addResource() calls until initialize() is executed.
+     *
+     * @var array
+     */
+    private $resources = array();
+
+    /**
      * Constructor.
      *
      * Available options:
@@ -65,9 +73,7 @@ class Translator extends BaseTranslator implements WarmableInterface
 
         $this->options = array_merge($this->options, $options);
         $this->resourceLocales = array_keys($this->options['resource_files']);
-        if (null !== $this->options['cache_dir'] && $this->options['debug']) {
-            $this->loadResources();
-        }
+        $this->addResourceFiles($this->options['resource_files']);
 
         parent::__construct($container->getParameter('kernel.default_locale'), $selector, $this->options['cache_dir'], $this->options['debug']);
     }
@@ -82,9 +88,20 @@ class Translator extends BaseTranslator implements WarmableInterface
             return;
         }
 
-        foreach ($this->resourceLocales as $locale) {
+        $locales = array_merge($this->getFallbackLocales(), array($this->getLocale()), $this->resourceLocales);
+        foreach (array_unique($locales) as $locale) {
+            // reset catalogue in case it's already loaded during the dump of the other locales.
+            if (isset($this->catalogues[$locale])) {
+                unset($this->catalogues[$locale]);
+            }
+
             $this->loadCatalogue($locale);
         }
+    }
+
+    public function addResource($format, $resource, $locale, $domain = null)
+    {
+        $this->resources[] = array($format, $resource, $locale, $domain);
     }
 
     /**
@@ -98,7 +115,12 @@ class Translator extends BaseTranslator implements WarmableInterface
 
     protected function initialize()
     {
-        $this->loadResources();
+        foreach ($this->resources as $key => $params) {
+            list($format, $resource, $locale, $domain) = $params;
+            parent::addResource($format, $resource, $locale, $domain);
+        }
+        $this->resources = array();
+
         foreach ($this->loaderIds as $id => $aliases) {
             foreach ($aliases as $alias) {
                 $this->addLoader($alias, $this->container->get($id));
@@ -106,14 +128,13 @@ class Translator extends BaseTranslator implements WarmableInterface
         }
     }
 
-    private function loadResources()
+    private function addResourceFiles($filesByLocale)
     {
-        foreach ($this->options['resource_files'] as $locale => $files) {
+        foreach ($filesByLocale as $locale => $files) {
             foreach ($files as $key => $file) {
                 // filename is domain.locale.format
                 list($domain, $locale, $format) = explode('.', basename($file), 3);
                 $this->addResource($format, $file, $locale, $domain);
-                unset($this->options['resource_files'][$locale][$key]);
             }
         }
     }

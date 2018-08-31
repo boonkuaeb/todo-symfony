@@ -11,9 +11,11 @@
 
 namespace Symfony\Component\Security\Core\Tests\Authentication\Token;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authentication\Token\AbstractToken;
 use Symfony\Component\Security\Core\Role\Role;
 use Symfony\Component\Security\Core\Role\SwitchUserRole;
+use Symfony\Component\Security\Core\User\User;
 
 class TestUser
 {
@@ -57,7 +59,8 @@ class ConcreteToken extends AbstractToken
     }
 }
 
-class AbstractTokenTest extends \PHPUnit_Framework_TestCase
+/** @noinspection PhpUndefinedClassInspection */
+class AbstractTokenTest extends TestCase
 {
     public function testGetUsername()
     {
@@ -68,7 +71,7 @@ class AbstractTokenTest extends \PHPUnit_Framework_TestCase
         $token->setUser(new TestUser('fabien'));
         $this->assertEquals('fabien', $token->getUsername());
 
-        $user = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
+        $user = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
         $user->expects($this->once())->method('getUsername')->will($this->returnValue('fabien'));
         $token->setUser($user);
         $this->assertEquals('fabien', $token->getUsername());
@@ -78,26 +81,35 @@ class AbstractTokenTest extends \PHPUnit_Framework_TestCase
     {
         $token = $this->getToken(array('ROLE_FOO'));
 
-        $user = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
+        $user = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
         $user->expects($this->once())->method('eraseCredentials');
         $token->setUser($user);
 
         $token->eraseCredentials();
     }
 
-    /**
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::serialize
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::unserialize
-     */
     public function testSerialize()
     {
-        $token = $this->getToken(array('ROLE_FOO'));
+        $token = $this->getToken(array('ROLE_FOO', new Role('ROLE_BAR')));
         $token->setAttributes(array('foo' => 'bar'));
 
         $uToken = unserialize(serialize($token));
 
         $this->assertEquals($token->getRoles(), $uToken->getRoles());
         $this->assertEquals($token->getAttributes(), $uToken->getAttributes());
+    }
+
+    public function testSerializeWithRoleObjects()
+    {
+        $user = new User('name', 'password', array(new Role('ROLE_FOO'), new Role('ROLE_BAR')));
+        $token = new ConcreteToken($user, $user->getRoles());
+
+        $serialized = serialize($token);
+        $unserialized = unserialize($serialized);
+
+        $roles = $unserialized->getRoles();
+
+        $this->assertEquals($roles, $user->getRoles());
     }
 
     public function testSerializeParent()
@@ -114,9 +126,6 @@ class AbstractTokenTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    /**
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::__construct
-     */
     public function testConstructor()
     {
         $token = $this->getToken(array('ROLE_FOO'));
@@ -129,10 +138,6 @@ class AbstractTokenTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array(new Role('ROLE_FOO'), new Role('ROLE_BAR')), $token->getRoles());
     }
 
-    /**
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::isAuthenticated
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::setAuthenticated
-     */
     public function testAuthenticatedFlag()
     {
         $token = $this->getToken();
@@ -145,13 +150,6 @@ class AbstractTokenTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($token->isAuthenticated());
     }
 
-    /**
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::getAttributes
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::setAttributes
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::hasAttribute
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::getAttribute
-     * @covers Symfony\Component\Security\Core\Authentication\Token\AbstractToken::setAttribute
-     */
     public function testAttributes()
     {
         $attributes = array('foo' => 'bar');
@@ -186,8 +184,8 @@ class AbstractTokenTest extends \PHPUnit_Framework_TestCase
 
     public function getUsers()
     {
-        $user = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
-        $advancedUser = $this->getMock('Symfony\Component\Security\Core\User\AdvancedUserInterface');
+        $user = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
+        $advancedUser = $this->getMockBuilder('Symfony\Component\Security\Core\User\AdvancedUserInterface')->getMock();
 
         return array(
             array($advancedUser),
@@ -215,8 +213,8 @@ class AbstractTokenTest extends \PHPUnit_Framework_TestCase
 
     public function getUserChanges()
     {
-        $user = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
-        $advancedUser = $this->getMock('Symfony\Component\Security\Core\User\AdvancedUserInterface');
+        $user = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
+        $advancedUser = $this->getMockBuilder('Symfony\Component\Security\Core\User\AdvancedUserInterface')->getMock();
 
         return array(
             array(

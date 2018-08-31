@@ -27,8 +27,6 @@ class InMemoryUserProvider implements UserProviderInterface
     private $users;
 
     /**
-     * Constructor.
-     *
      * The user array is a hash where the keys are usernames and the values are
      * an array of attributes: 'password', 'enabled', and 'roles'.
      *
@@ -49,8 +47,6 @@ class InMemoryUserProvider implements UserProviderInterface
     /**
      * Adds a new User to the provider.
      *
-     * @param UserInterface $user A UserInterface instance
-     *
      * @throws \LogicException
      */
     public function createUser(UserInterface $user)
@@ -67,17 +63,9 @@ class InMemoryUserProvider implements UserProviderInterface
      */
     public function loadUserByUsername($username)
     {
-        if (!isset($this->users[strtolower($username)])) {
-            $ex = new UsernameNotFoundException(sprintf('Username "%s" does not exist.', $username));
-            $ex->setUsername($username);
+        $user = $this->getUser($username);
 
-            throw $ex;
-        }
-
-        $user = $this->users[strtolower($username)];
-
-        return new User($user->getUsername(), $user->getPassword(), $user->getRoles(), $user->isEnabled(), $user->isAccountNonExpired(),
-                $user->isCredentialsNonExpired(), $user->isAccountNonLocked());
+        return new User($user->getUsername(), $user->getPassword(), $user->getRoles(), $user->isEnabled(), $user->isAccountNonExpired(), $user->isCredentialsNonExpired(), $user->isAccountNonLocked());
     }
 
     /**
@@ -89,7 +77,9 @@ class InMemoryUserProvider implements UserProviderInterface
             throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', get_class($user)));
         }
 
-        return $this->loadUserByUsername($user->getUsername());
+        $storedUser = $this->getUser($user->getUsername());
+
+        return new User($storedUser->getUsername(), $storedUser->getPassword(), $storedUser->getRoles(), $storedUser->isEnabled(), $storedUser->isAccountNonExpired(), $storedUser->isCredentialsNonExpired() && $storedUser->getPassword() === $user->getPassword(), $storedUser->isAccountNonLocked());
     }
 
     /**
@@ -97,6 +87,27 @@ class InMemoryUserProvider implements UserProviderInterface
      */
     public function supportsClass($class)
     {
-        return $class === 'Symfony\Component\Security\Core\User\User';
+        return 'Symfony\Component\Security\Core\User\User' === $class;
+    }
+
+    /**
+     * Returns the user by given username.
+     *
+     * @param string $username The username
+     *
+     * @return User
+     *
+     * @throws UsernameNotFoundException if user whose given username does not exist
+     */
+    private function getUser($username)
+    {
+        if (!isset($this->users[strtolower($username)])) {
+            $ex = new UsernameNotFoundException(sprintf('Username "%s" does not exist.', $username));
+            $ex->setUsername($username);
+
+            throw $ex;
+        }
+
+        return $this->users[strtolower($username)];
     }
 }

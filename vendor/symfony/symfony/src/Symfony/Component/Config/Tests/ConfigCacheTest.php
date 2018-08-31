@@ -11,10 +11,11 @@
 
 namespace Symfony\Component\Config\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\ConfigCache;
 use Symfony\Component\Config\Resource\FileResource;
 
-class ConfigCacheTest extends \PHPUnit_Framework_TestCase
+class ConfigCacheTest extends TestCase
 {
     private $resourceFile = null;
 
@@ -93,6 +94,15 @@ class ConfigCacheTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($cache->isFresh());
     }
 
+    public function testCacheIsNotFreshWhenUnserializeFails()
+    {
+        file_put_contents($this->metaFile, str_replace('FileResource', 'ClassNotHere', file_get_contents($this->metaFile)));
+
+        $cache = new ConfigCache($this->cacheFile, true);
+
+        $this->assertFalse($cache->isFresh());
+    }
+
     public function testWriteDumpsFile()
     {
         unlink($this->cacheFile);
@@ -102,7 +112,7 @@ class ConfigCacheTest extends \PHPUnit_Framework_TestCase
         $cache->write('FOOBAR');
 
         $this->assertFileExists($this->cacheFile, 'Cache file is created');
-        $this->assertSame('FOOBAR', file_get_contents($this->cacheFile));
+        $this->assertStringEqualsFile($this->cacheFile, 'FOOBAR');
         $this->assertFileNotExists($this->metaFile, 'Meta file is not created');
     }
 
@@ -118,7 +128,7 @@ class ConfigCacheTest extends \PHPUnit_Framework_TestCase
 
         $this->assertFileExists($this->cacheFile, 'Cache file is created');
         $this->assertFileExists($this->metaFile, 'Meta file is created');
-        $this->assertSame(serialize($metadata), file_get_contents($this->metaFile));
+        $this->assertStringEqualsFile($this->metaFile, serialize($metadata));
     }
 
     private function makeCacheFresh()

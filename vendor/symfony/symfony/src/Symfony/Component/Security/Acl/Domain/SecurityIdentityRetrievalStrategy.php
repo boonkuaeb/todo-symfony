@@ -28,12 +28,6 @@ class SecurityIdentityRetrievalStrategy implements SecurityIdentityRetrievalStra
     private $roleHierarchy;
     private $authenticationTrustResolver;
 
-    /**
-     * Constructor.
-     *
-     * @param RoleHierarchyInterface      $roleHierarchy
-     * @param AuthenticationTrustResolver $authenticationTrustResolver
-     */
     public function __construct(RoleHierarchyInterface $roleHierarchy, AuthenticationTrustResolver $authenticationTrustResolver)
     {
         $this->roleHierarchy = $roleHierarchy;

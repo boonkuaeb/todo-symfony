@@ -227,7 +227,6 @@ class TextDescriptor extends Descriptor
                 $alias = $definition;
                 $table->addRow(array_merge(array($serviceId, sprintf('alias for "%s"', $alias)), $tagsCount ? array_fill(0, $tagsCount, '') : array()));
             } else {
-                // we have no information (happens with "service_container")
                 $table->addRow(array_merge(array($serviceId, get_class($definition)), $tagsCount ? array_fill(0, $tagsCount, '') : array()));
             }
         }
@@ -376,8 +375,6 @@ class TextDescriptor extends Descriptor
     }
 
     /**
-     * @param array $array
-     *
      * @return string
      */
     private function formatRouterConfig(array $array)

@@ -35,29 +35,21 @@ class OptionsResolver implements Options, OptionsResolverInterface
 
     /**
      * The names of all defined options.
-     *
-     * @var array
      */
     private $defined = array();
 
     /**
      * The default option values.
-     *
-     * @var array
      */
     private $defaults = array();
 
     /**
      * The names of required options.
-     *
-     * @var array
      */
     private $required = array();
 
     /**
      * The resolved option values.
-     *
-     * @var array
      */
     private $resolved = array();
 
@@ -70,22 +62,16 @@ class OptionsResolver implements Options, OptionsResolverInterface
 
     /**
      * A list of accepted values for each option.
-     *
-     * @var array
      */
     private $allowedValues = array();
 
     /**
      * A list of accepted types for each option.
-     *
-     * @var array
      */
     private $allowedTypes = array();
 
     /**
      * A list of closures for evaluating lazy options.
-     *
-     * @var array
      */
     private $lazy = array();
 
@@ -93,8 +79,6 @@ class OptionsResolver implements Options, OptionsResolverInterface
      * A list of lazy options whose closure is currently being called.
      *
      * This list helps detecting circular dependencies between lazy options.
-     *
-     * @var array
      */
     private $calling = array();
 
@@ -105,8 +89,6 @@ class OptionsResolver implements Options, OptionsResolverInterface
      * necessary in order to avoid inconsistencies during the resolving
      * process. If any option is changed after being read, all evaluated
      * lazy options that depend on this option would become invalid.
-     *
-     * @var bool
      */
     private $locked = false;
 
@@ -152,7 +134,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      * @param string $option The name of the option
      * @param mixed  $value  The default value of the option
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws AccessException If called from a lazy option or normalizer
      */
@@ -215,7 +197,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      *
      * @param array $defaults The default values to set
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws AccessException If called from a lazy option or normalizer
      */
@@ -248,7 +230,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      *
      * @param string|string[] $optionNames One or more option names
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws AccessException If called from a lazy option or normalizer
      */
@@ -329,7 +311,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      *
      * @param string|string[] $optionNames One or more option names
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws AccessException If called from a lazy option or normalizer
      */
@@ -396,7 +378,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      * @param string   $option     The option name
      * @param \Closure $normalizer The normalizer
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws UndefinedOptionsException If the option is undefined
      * @throws AccessException           If called from a lazy option or normalizer
@@ -428,18 +410,17 @@ class OptionsResolver implements Options, OptionsResolverInterface
      *
      * @param array $normalizers An array of closures
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws UndefinedOptionsException If the option is undefined
      * @throws AccessException           If called from a lazy option or normalizer
      *
      * @see setNormalizer()
-     *
      * @deprecated since version 2.6, to be removed in 3.0.
      */
     public function setNormalizers(array $normalizers)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use setNormalizer() instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use setNormalizer() instead.', E_USER_DEPRECATED);
 
         foreach ($normalizers as $option => $normalizer) {
             $this->setNormalizer($option, $normalizer);
@@ -464,7 +445,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      * @param string $option        The option name
      * @param mixed  $allowedValues One or more acceptable values/closures
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws UndefinedOptionsException If the option is undefined
      * @throws AccessException           If called from a lazy option or normalizer
@@ -477,7 +458,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
 
         // BC
         if (is_array($option) && null === $allowedValues) {
-            @trigger_error('Calling the '.__METHOD__.' method with an array of options is deprecated since version 2.6 and will be removed in 3.0. Use the new signature with a single option instead.', E_USER_DEPRECATED);
+            @trigger_error('Calling the '.__METHOD__.' method with an array of options is deprecated since Symfony 2.6 and will be removed in 3.0. Use the new signature with a single option instead.', E_USER_DEPRECATED);
 
             foreach ($option as $optionName => $optionValues) {
                 $this->setAllowedValues($optionName, $optionValues);
@@ -520,7 +501,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      * @param string $option        The option name
      * @param mixed  $allowedValues One or more acceptable values/closures
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws UndefinedOptionsException If the option is undefined
      * @throws AccessException           If called from a lazy option or normalizer
@@ -533,7 +514,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
 
         // BC
         if (is_array($option) && null === $allowedValues) {
-            @trigger_error('Calling the '.__METHOD__.' method with an array of options is deprecated since version 2.6 and will be removed in 3.0. Use the new signature with a single option instead.', E_USER_DEPRECATED);
+            @trigger_error('Calling the '.__METHOD__.' method with an array of options is deprecated since Symfony 2.6 and will be removed in 3.0. Use the new signature with a single option instead.', E_USER_DEPRECATED);
 
             foreach ($option as $optionName => $optionValues) {
                 $this->addAllowedValues($optionName, $optionValues);
@@ -576,7 +557,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      * @param string          $option       The option name
      * @param string|string[] $allowedTypes One or more accepted types
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws UndefinedOptionsException If the option is undefined
      * @throws AccessException           If called from a lazy option or normalizer
@@ -589,7 +570,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
 
         // BC
         if (is_array($option) && null === $allowedTypes) {
-            @trigger_error('Calling the '.__METHOD__.' method with an array of options is deprecated since version 2.6 and will be removed in 3.0. Use the new signature with a single option instead.', E_USER_DEPRECATED);
+            @trigger_error('Calling the '.__METHOD__.' method with an array of options is deprecated since Symfony 2.6 and will be removed in 3.0. Use the new signature with a single option instead.', E_USER_DEPRECATED);
 
             foreach ($option as $optionName => $optionTypes) {
                 $this->setAllowedTypes($optionName, $optionTypes);
@@ -626,7 +607,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      * @param string          $option       The option name
      * @param string|string[] $allowedTypes One or more accepted types
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws UndefinedOptionsException If the option is undefined
      * @throws AccessException           If called from a lazy option or normalizer
@@ -639,7 +620,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
 
         // BC
         if (is_array($option) && null === $allowedTypes) {
-            @trigger_error('Calling the '.__METHOD__.' method with an array of options is deprecated since version 2.6 and will be removed in 3.0. Use the new signature with a single option instead.', E_USER_DEPRECATED);
+            @trigger_error('Calling the '.__METHOD__.' method with an array of options is deprecated since Symfony 2.6 and will be removed in 3.0. Use the new signature with a single option instead.', E_USER_DEPRECATED);
 
             foreach ($option as $optionName => $optionTypes) {
                 $this->addAllowedTypes($optionName, $optionTypes);
@@ -675,7 +656,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      *
      * @param string|string[] $optionNames One or more option names
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws AccessException If called from a lazy option or normalizer
      */
@@ -696,7 +677,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
     /**
      * Removes all options.
      *
-     * @return OptionsResolver This instance
+     * @return $this
      *
      * @throws AccessException If called from a lazy option or normalizer
      */
@@ -855,8 +836,16 @@ class OptionsResolver implements Options, OptionsResolverInterface
             // dependency
             // BEGIN
             $this->calling[$option] = true;
-            foreach ($this->lazy[$option] as $closure) {
-                $value = $closure($this, $value);
+            try {
+                foreach ($this->lazy[$option] as $closure) {
+                    $value = $closure($this, $value);
+                }
+            } catch (\Exception $e) {
+                unset($this->calling[$option]);
+                throw $e;
+            } catch (\Throwable $e) {
+                unset($this->calling[$option]);
+                throw $e;
             }
             unset($this->calling[$option]);
             // END
@@ -954,7 +943,15 @@ class OptionsResolver implements Options, OptionsResolverInterface
             // dependency
             // BEGIN
             $this->calling[$option] = true;
-            $value = $normalizer($this, $value);
+            try {
+                $value = $normalizer($this, $value);
+            } catch (\Exception $e) {
+                unset($this->calling[$option]);
+                throw $e;
+            } catch (\Throwable $e) {
+                unset($this->calling[$option]);
+                throw $e;
+            }
             unset($this->calling[$option]);
             // END
         }
@@ -1032,7 +1029,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      */
     public function set($option, $value)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use the setDefaults() method instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use the setDefaults() method instead.', E_USER_DEPRECATED);
 
         return $this->setDefault($option, $value);
     }
@@ -1044,7 +1041,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      */
     public function replace(array $defaults)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use the clear() and setDefaults() methods instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use the clear() and setDefaults() methods instead.', E_USER_DEPRECATED);
 
         $this->clear();
 
@@ -1058,7 +1055,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      */
     public function overload($option, $value)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use the setDefault() method instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use the setDefault() method instead.', E_USER_DEPRECATED);
 
         return $this->setDefault($option, $value);
     }
@@ -1070,7 +1067,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      */
     public function get($option)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use the ArrayAccess syntax instead to get an option value.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use the ArrayAccess syntax instead to get an option value.', E_USER_DEPRECATED);
 
         return $this->offsetGet($option);
     }
@@ -1082,7 +1079,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      */
     public function has($option)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use the ArrayAccess syntax instead to get an option value.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use the ArrayAccess syntax instead to get an option value.', E_USER_DEPRECATED);
 
         return $this->offsetExists($option);
     }
@@ -1094,7 +1091,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      */
     public function replaceDefaults(array $defaultValues)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use the clear() and setDefaults() methods instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use the clear() and setDefaults() methods instead.', E_USER_DEPRECATED);
 
         $this->clear();
 
@@ -1108,7 +1105,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      */
     public function setOptional(array $optionNames)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use the setDefined() method instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use the setDefined() method instead.', E_USER_DEPRECATED);
 
         return $this->setDefined($optionNames);
     }
@@ -1120,7 +1117,7 @@ class OptionsResolver implements Options, OptionsResolverInterface
      */
     public function isKnown($option)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use the isDefined() method instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use the isDefined() method instead.', E_USER_DEPRECATED);
 
         return $this->isDefined($option);
     }

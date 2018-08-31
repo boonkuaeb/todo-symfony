@@ -16,6 +16,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Twig\Environment;
 
 /**
  * Lists twig functions, filters, globals and tests present in the current project.
@@ -34,18 +35,13 @@ class DebugCommand extends Command
         parent::__construct($name);
     }
 
-    /**
-     * Sets the twig environment.
-     *
-     * @param \Twig_Environment $twig
-     */
-    public function setTwigEnvironment(\Twig_Environment $twig)
+    public function setTwigEnvironment(Environment $twig)
     {
         $this->twig = $twig;
     }
 
     /**
-     * @return \Twig_Environment $twig
+     * @return Environment $twig
      */
     protected function getTwigEnvironment()
     {
@@ -60,7 +56,7 @@ class DebugCommand extends Command
                 new InputOption('format', null, InputOption::VALUE_REQUIRED, 'The output format (text or json)', 'text'),
             ))
             ->setDescription('Shows a list of twig functions, filters, globals and tests')
-            ->setHelp(<<<EOF
+            ->setHelp(<<<'EOF'
 The <info>%command.name%</info> command outputs a list of twig functions,
 filters, globals and tests. Output can be filtered with an optional argument.
 
@@ -92,7 +88,7 @@ EOF
 
         $types = array('functions', 'filters', 'tests', 'globals');
 
-        if ($input->getOption('format') === 'json') {
+        if ('json' === $input->getOption('format')) {
             $data = array();
             foreach ($types as $type) {
                 foreach ($twig->{'get'.ucfirst($type)}() as $name => $entity) {
@@ -133,16 +129,15 @@ EOF
 
     private function getMetadata($type, $entity)
     {
-        if ($type === 'globals') {
+        if ('globals' === $type) {
             return $entity;
         }
-        if ($type === 'tests') {
+        if ('tests' === $type) {
             return;
         }
-        if ($type === 'functions' || $type === 'filters') {
-            $args = array();
+        if ('functions' === $type || 'filters' === $type) {
             $cb = $entity->getCallable();
-            if (is_null($cb)) {
+            if (null === $cb) {
                 return;
             }
             if (is_array($cb)) {
@@ -150,7 +145,7 @@ EOF
                     return;
                 }
                 $refl = new \ReflectionMethod($cb[0], $cb[1]);
-            } elseif (is_object($cb) && is_callable($cb)) {
+            } elseif (is_object($cb) && method_exists($cb, '__invoke')) {
                 $refl = new \ReflectionMethod($cb, '__invoke');
             } elseif (function_exists($cb)) {
                 $refl = new \ReflectionFunction($cb);
@@ -160,14 +155,20 @@ EOF
                 throw new \UnexpectedValueException('Unsupported callback type');
             }
 
-            // filter out context/environment args
-            $args = array_filter($refl->getParameters(), function ($param) use ($entity) {
-                if ($entity->needsContext() && $param->getName() === 'context') {
-                    return false;
-                }
+            $args = $refl->getParameters();
 
-                return !$param->getClass() || $param->getClass()->getName() !== 'Twig_Environment';
-            });
+            // filter out context/environment args
+            if ($entity->needsEnvironment()) {
+                array_shift($args);
+            }
+            if ($entity->needsContext()) {
+                array_shift($args);
+            }
+
+            if ('filters' === $type) {
+                // remove the value the filter is applied on
+                array_shift($args);
+            }
 
             // format args
             $args = array_map(function ($param) {
@@ -178,31 +179,26 @@ EOF
                 return $param->getName();
             }, $args);
 
-            if ($type === 'filters') {
-                // remove the value the filter is applied on
-                array_shift($args);
-            }
-
             return $args;
         }
     }
 
     private function getPrettyMetadata($type, $entity)
     {
-        if ($type === 'tests') {
+        if ('tests' === $type) {
             return '';
         }
 
         try {
             $meta = $this->getMetadata($type, $entity);
-            if ($meta === null) {
+            if (null === $meta) {
                 return '(unknown?)';
             }
         } catch (\UnexpectedValueException $e) {
             return ' <error>'.$e->getMessage().'</error>';
         }
 
-        if ($type === 'globals') {
+        if ('globals' === $type) {
             if (is_object($meta)) {
                 return ' = object('.get_class($meta).')';
             }
@@ -210,11 +206,11 @@ EOF
             return ' = '.substr(@json_encode($meta), 0, 50);
         }
 
-        if ($type === 'functions') {
+        if ('functions' === $type) {
             return '('.implode(', ', $meta).')';
         }
 
-        if ($type === 'filters') {
+        if ('filters' === $type) {
             return $meta ? '('.implode(', ', $meta).')' : '';
         }
     }

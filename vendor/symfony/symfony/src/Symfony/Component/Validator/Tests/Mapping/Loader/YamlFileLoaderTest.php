@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Validator\Tests\Mapping\Loader;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\Choice;
@@ -23,7 +24,7 @@ use Symfony\Component\Validator\Mapping\Loader\YamlFileLoader;
 use Symfony\Component\Validator\Tests\Fixtures\ConstraintA;
 use Symfony\Component\Validator\Tests\Fixtures\ConstraintB;
 
-class YamlFileLoaderTest extends \PHPUnit_Framework_TestCase
+class YamlFileLoaderTest extends TestCase
 {
     public function testLoadClassMetadataReturnsFalseIfEmpty()
     {
@@ -31,15 +32,30 @@ class YamlFileLoaderTest extends \PHPUnit_Framework_TestCase
         $metadata = new ClassMetadata('Symfony\Component\Validator\Tests\Fixtures\Entity');
 
         $this->assertFalse($loader->loadClassMetadata($metadata));
+
+        $r = new \ReflectionProperty($loader, 'classes');
+        $r->setAccessible(true);
+        $this->assertSame(array(), $r->getValue($loader));
     }
 
-    public function testLoadClassMetadataThrowsExceptionIfNotAnArray()
+    /**
+     * @dataProvider provideInvalidYamlFiles
+     * @expectedException \InvalidArgumentException
+     */
+    public function testInvalidYamlFiles($path)
     {
-        $loader = new YamlFileLoader(__DIR__.'/nonvalid-mapping.yml');
+        $loader = new YamlFileLoader(__DIR__.'/'.$path);
         $metadata = new ClassMetadata('Symfony\Component\Validator\Tests\Fixtures\Entity');
 
-        $this->setExpectedException('\InvalidArgumentException');
         $loader->loadClassMetadata($metadata);
+    }
+
+    public function provideInvalidYamlFiles()
+    {
+        return array(
+            array('nonvalid-mapping.yml'),
+            array('bad-format.yml'),
+        );
     }
 
     /**
@@ -53,7 +69,7 @@ class YamlFileLoaderTest extends \PHPUnit_Framework_TestCase
             $loader->loadClassMetadata($metadata);
         } catch (\InvalidArgumentException $e) {
             // Call again. Again an exception should be thrown
-            $this->setExpectedException('\InvalidArgumentException');
+            $this->{method_exists($this, $_ = 'expectException') ? $_ : 'setExpectedException'}('\InvalidArgumentException');
             $loader->loadClassMetadata($metadata);
         }
     }

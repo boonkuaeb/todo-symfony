@@ -17,20 +17,14 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Security;
 
 /**
- * Extracts Security Errors from Request
+ * Extracts Security Errors from Request.
  *
  * @author Boris Vujicic <boris.vujicic@gmail.com>
  */
 class AuthenticationUtils
 {
-    /**
-     * @var RequestStack
-     */
     private $requestStack;
 
-    /**
-     * @param RequestStack $requestStack
-     */
     public function __construct(RequestStack $requestStack)
     {
         $this->requestStack = $requestStack;
@@ -49,7 +43,7 @@ class AuthenticationUtils
 
         if ($request->attributes->has(Security::AUTHENTICATION_ERROR)) {
             $authenticationException = $request->attributes->get(Security::AUTHENTICATION_ERROR);
-        } elseif ($session !== null && $session->has(Security::AUTHENTICATION_ERROR)) {
+        } elseif (null !== $session && $session->has(Security::AUTHENTICATION_ERROR)) {
             $authenticationException = $session->get(Security::AUTHENTICATION_ERROR);
 
             if ($clearSession) {
@@ -65,13 +59,20 @@ class AuthenticationUtils
      */
     public function getLastUsername()
     {
-        $session = $this->getRequest()->getSession();
+        $request = $this->getRequest();
+
+        if ($request->attributes->has(Security::LAST_USERNAME)) {
+            return $request->attributes->get(Security::LAST_USERNAME);
+        }
+
+        $session = $request->getSession();
 
         return null === $session ? '' : $session->get(Security::LAST_USERNAME);
     }
 
     /**
      * @return Request
+     *
      * @throws \LogicException
      */
     private function getRequest()

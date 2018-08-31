@@ -32,8 +32,6 @@ class DoctrineAclCache implements AclCacheInterface
     private $permissionGrantingStrategy;
 
     /**
-     * Constructor.
-     *
      * @param Cache                               $cache
      * @param PermissionGrantingStrategyInterface $permissionGrantingStrategy
      * @param string                              $prefix
@@ -204,8 +202,6 @@ class DoctrineAclCache implements AclCacheInterface
 
     /**
      * Returns the key for the object identity.
-     *
-     * @param ObjectIdentityInterface $oid
      *
      * @return string
      */

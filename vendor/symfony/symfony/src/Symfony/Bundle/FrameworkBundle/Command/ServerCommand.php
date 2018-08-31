@@ -23,7 +23,11 @@ abstract class ServerCommand extends ContainerAwareCommand
      */
     public function isEnabled()
     {
-        if (version_compare(phpversion(), '5.4.0', '<') || defined('HHVM_VERSION')) {
+        if (\PHP_VERSION_ID < 50400 || defined('HHVM_VERSION')) {
+            return false;
+        }
+
+        if (!class_exists('Symfony\Component\Process\Process')) {
             return false;
         }
 
@@ -50,7 +54,9 @@ abstract class ServerCommand extends ContainerAwareCommand
             return true;
         }
 
-        list($hostname, $port) = explode(':', $address);
+        $pos = strrpos($address, ':');
+        $hostname = substr($address, 0, $pos);
+        $port = substr($address, $pos + 1);
 
         $fp = @fsockopen($hostname, $port, $errno, $errstr, 5);
 

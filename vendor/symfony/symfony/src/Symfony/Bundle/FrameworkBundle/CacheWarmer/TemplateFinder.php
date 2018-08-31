@@ -29,8 +29,6 @@ class TemplateFinder implements TemplateFinderInterface
     private $templates;
 
     /**
-     * Constructor.
-     *
      * @param KernelInterface             $kernel  A KernelInterface instance
      * @param TemplateNameParserInterface $parser  A TemplateNameParserInterface instance
      * @param string                      $rootDir The directory where global templates can be stored
@@ -97,8 +95,11 @@ class TemplateFinder implements TemplateFinderInterface
      */
     private function findTemplatesInBundle(BundleInterface $bundle)
     {
-        $templates = $this->findTemplatesInFolder($bundle->getPath().'/Resources/views');
         $name = $bundle->getName();
+        $templates = array_unique(array_merge(
+            $this->findTemplatesInFolder($bundle->getPath().'/Resources/views'),
+            $this->findTemplatesInFolder($this->rootDir.'/'.$name.'/views')
+        ));
 
         foreach ($templates as $i => $template) {
             $templates[$i] = $template->set('bundle', $name);

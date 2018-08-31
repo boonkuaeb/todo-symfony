@@ -185,7 +185,6 @@ class CallbackValidatorTest extends AbstractConstraintValidatorTest
             ->assertRaised();
     }
 
-    // BC with Symfony < 2.4
     /**
      * @group legacy
      */
@@ -201,7 +200,6 @@ class CallbackValidatorTest extends AbstractConstraintValidatorTest
             ->assertRaised();
     }
 
-    // BC with Symfony < 2.4
     /**
      * @group legacy
      */
@@ -217,7 +215,6 @@ class CallbackValidatorTest extends AbstractConstraintValidatorTest
             ->assertRaised();
     }
 
-    // BC with Symfony < 2.4
     /**
      * @group legacy
      */
@@ -235,7 +232,6 @@ class CallbackValidatorTest extends AbstractConstraintValidatorTest
             ->assertRaised();
     }
 
-    // BC with Symfony < 2.4
     /**
      * @group legacy
      */
@@ -255,7 +251,6 @@ class CallbackValidatorTest extends AbstractConstraintValidatorTest
             ->assertRaised();
     }
 
-    // BC with Symfony < 2.4
     /**
      * @group legacy
      */
@@ -273,7 +268,6 @@ class CallbackValidatorTest extends AbstractConstraintValidatorTest
             ->assertRaised();
     }
 
-    // BC with Symfony < 2.4
     /**
      * @group legacy
      */
@@ -298,7 +292,7 @@ class CallbackValidatorTest extends AbstractConstraintValidatorTest
     {
         $object = new CallbackValidatorTest_Object();
 
-        $this->validator->validate($object, new Callback(array('foobar')));
+        $this->validator->validate($object, new Callback(array('callback' => array('foobar'))));
     }
 
     /**
@@ -308,7 +302,7 @@ class CallbackValidatorTest extends AbstractConstraintValidatorTest
     {
         $object = new CallbackValidatorTest_Object();
 
-        $this->validator->validate($object, new Callback(array(array('foo', 'bar'))));
+        $this->validator->validate($object, new Callback(array('callback' => array('foo', 'bar'))));
     }
 
     /**
@@ -336,7 +330,9 @@ class CallbackValidatorTest extends AbstractConstraintValidatorTest
     // Should succeed. Needed when defining constraints as annotations.
     public function testNoConstructorArguments()
     {
-        new Callback();
+        $constraint = new Callback();
+
+        $this->assertSame(array(Constraint::CLASS_CONSTRAINT, Constraint::PROPERTY_CONSTRAINT), $constraint->getTargets());
     }
 
     public function testAnnotationInvocationSingleValued()

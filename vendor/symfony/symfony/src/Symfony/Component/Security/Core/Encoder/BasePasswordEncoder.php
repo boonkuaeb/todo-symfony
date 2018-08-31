@@ -50,8 +50,8 @@ abstract class BasePasswordEncoder implements PasswordEncoderInterface
     /**
      * Merges a password and a salt.
      *
-     * @param string $password the password to be used
-     * @param string $salt     the salt to be used
+     * @param string $password The password to be used
+     * @param string $salt     The salt to be used
      *
      * @return string a merged password and salt
      *
@@ -95,6 +95,6 @@ abstract class BasePasswordEncoder implements PasswordEncoderInterface
      */
     protected function isPasswordTooLong($password)
     {
-        return strlen($password) > self::MAX_PASSWORD_LENGTH;
+        return strlen($password) > static::MAX_PASSWORD_LENGTH;
     }
 }

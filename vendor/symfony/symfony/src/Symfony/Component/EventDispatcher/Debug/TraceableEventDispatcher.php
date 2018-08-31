@@ -33,13 +33,6 @@ class TraceableEventDispatcher implements TraceableEventDispatcherInterface
     private $dispatcher;
     private $wrappedListeners;
 
-    /**
-     * Constructor.
-     *
-     * @param EventDispatcherInterface $dispatcher An EventDispatcherInterface instance
-     * @param Stopwatch                $stopwatch  A Stopwatch instance
-     * @param LoggerInterface          $logger     A LoggerInterface instance
-     */
     public function __construct(EventDispatcherInterface $dispatcher, Stopwatch $stopwatch, LoggerInterface $logger = null)
     {
         $this->dispatcher = $dispatcher;
@@ -114,6 +107,10 @@ class TraceableEventDispatcher implements TraceableEventDispatcherInterface
     {
         if (null === $event) {
             $event = new Event();
+        }
+
+        if (null !== $this->logger && $event->isPropagationStopped()) {
+            $this->logger->debug(sprintf('The "%s" event is already stopped. No listeners have been called.', $eventName));
         }
 
         $this->preProcess($eventName);

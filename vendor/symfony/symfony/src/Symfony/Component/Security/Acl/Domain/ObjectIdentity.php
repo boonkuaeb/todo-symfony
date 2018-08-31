@@ -27,8 +27,6 @@ final class ObjectIdentity implements ObjectIdentityInterface
     private $type;
 
     /**
-     * Constructor.
-     *
      * @param string $identifier
      * @param string $type
      *
@@ -52,9 +50,9 @@ final class ObjectIdentity implements ObjectIdentityInterface
      *
      * @param object $domainObject
      *
-     * @throws InvalidDomainObjectException
+     * @return self
      *
-     * @return ObjectIdentity
+     * @throws InvalidDomainObjectException
      */
     public static function fromDomainObject($domainObject)
     {

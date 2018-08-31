@@ -25,9 +25,6 @@ class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInter
      */
     private $translator;
 
-    /**
-     * @var array
-     */
     private $messages = array();
 
     /**
@@ -66,8 +63,6 @@ class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInter
 
     /**
      * {@inheritdoc}
-     *
-     * @api
      */
     public function setLocale($locale)
     {
@@ -76,8 +71,6 @@ class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInter
 
     /**
      * {@inheritdoc}
-     *
-     * @api
      */
     public function getLocale()
     {
@@ -90,6 +83,20 @@ class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInter
     public function getCatalogue($locale = null)
     {
         return $this->translator->getCatalogue($locale);
+    }
+
+    /**
+     * Gets the fallback locales.
+     *
+     * @return array $locales The fallback locales
+     */
+    public function getFallbackLocales()
+    {
+        if ($this->translator instanceof Translator || method_exists($this->translator, 'getFallbackLocales')) {
+            return $this->translator->getFallbackLocales();
+        }
+
+        return array();
     }
 
     /**
@@ -112,7 +119,7 @@ class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInter
      * @param string|null $locale
      * @param string|null $domain
      * @param string      $id
-     * @param string      $trans
+     * @param string      $translation
      */
     private function collectMessage($locale, $domain, $id, $translation)
     {
@@ -128,14 +135,14 @@ class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInter
         } elseif ($catalogue->has($id, $domain)) {
             $state = self::MESSAGE_EQUALS_FALLBACK;
 
-            $fallbackCatalogue = $catalogue->getFallBackCatalogue();
+            $fallbackCatalogue = $catalogue->getFallbackCatalogue();
             while ($fallbackCatalogue) {
                 if ($fallbackCatalogue->defines($id, $domain)) {
                     $locale = $fallbackCatalogue->getLocale();
                     break;
                 }
 
-                $fallbackCatalogue = $fallbackCatalogue->getFallBackCatalogue();
+                $fallbackCatalogue = $fallbackCatalogue->getFallbackCatalogue();
             }
         } else {
             $state = self::MESSAGE_MISSING;

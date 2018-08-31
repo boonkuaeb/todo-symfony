@@ -11,14 +11,14 @@
 
 namespace Symfony\Component\Security\Acl\Tests\Domain;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Acl\Domain\ObjectIdentity;
 use Symfony\Component\Security\Acl\Domain\RoleSecurityIdentity;
 use Symfony\Component\Security\Acl\Domain\Acl;
 use Symfony\Component\Security\Acl\Domain\UserSecurityIdentity;
 use Symfony\Component\Security\Acl\Domain\PermissionGrantingStrategy;
-use Symfony\Component\Security\Acl\Exception\NoAceFoundException;
 
-class PermissionGrantingStrategyTest extends \PHPUnit_Framework_TestCase
+class PermissionGrantingStrategyTest extends TestCase
 {
     public function testIsGrantedObjectAcesHavePriority()
     {
@@ -107,7 +107,7 @@ class PermissionGrantingStrategyTest extends \PHPUnit_Framework_TestCase
         $acl = $this->getAcl($strategy);
         $sid = new UserSecurityIdentity('johannes', 'Foo');
 
-        $logger = $this->getMock('Symfony\Component\Security\Acl\Model\AuditLoggerInterface');
+        $logger = $this->getMockBuilder('Symfony\Component\Security\Acl\Model\AuditLoggerInterface')->getMock();
         $logger
             ->expects($this->once())
             ->method('logIfNeeded')
@@ -126,7 +126,7 @@ class PermissionGrantingStrategyTest extends \PHPUnit_Framework_TestCase
         $acl = $this->getAcl($strategy);
         $sid = new UserSecurityIdentity('johannes', 'Foo');
 
-        $logger = $this->getMock('Symfony\Component\Security\Acl\Model\AuditLoggerInterface');
+        $logger = $this->getMockBuilder('Symfony\Component\Security\Acl\Model\AuditLoggerInterface')->getMock();
         $logger
             ->expects($this->once())
             ->method('logIfNeeded')
@@ -151,11 +151,13 @@ class PermissionGrantingStrategyTest extends \PHPUnit_Framework_TestCase
         $acl->insertObjectAce($sid, $aceMask, 0, true, $maskStrategy);
 
         if (false === $result) {
-            try {
-                $strategy->isGranted($acl, array($requiredMask), array($sid));
-                $this->fail('The ACE is not supposed to match.');
-            } catch (NoAceFoundException $e) {
+            if (method_exists($this, 'expectException')) {
+                $this->expectException('Symfony\Component\Security\Acl\Exception\NoAceFoundException');
+            } else {
+                $this->setExpectedException('Symfony\Component\Security\Acl\Exception\NoAceFoundException');
             }
+
+            $strategy->isGranted($acl, array($requiredMask), array($sid));
         } else {
             $this->assertTrue($strategy->isGranted($acl, array($requiredMask), array($sid)));
         }

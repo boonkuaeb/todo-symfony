@@ -11,12 +11,13 @@
 
 namespace Symfony\Component\Security\Http\Tests\RememberMe;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Http\RememberMe\RememberMeServicesInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Http\RememberMe\AbstractRememberMeServices;
 
-class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
+class AbstractRememberMeServicesTest extends TestCase
 {
     public function testGetRememberMeParameter()
     {
@@ -62,7 +63,7 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
         $request = new Request();
         $request->cookies->set('foo', 'foo');
 
-        $user = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
+        $user = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
         $user
             ->expects($this->once())
             ->method('getRoles')
@@ -82,16 +83,32 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('fookey', $returnedToken->getProviderKey());
     }
 
-    public function testLogout()
+    /**
+     * @dataProvider provideOptionsForLogout
+     */
+    public function testLogout(array $options)
     {
-        $service = $this->getService(null, array('name' => 'foo', 'path' => null, 'domain' => null));
+        $service = $this->getService(null, $options);
         $request = new Request();
         $response = new Response();
-        $token = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\TokenInterface');
-
+        $token = $this->getMockBuilder('Symfony\Component\Security\Core\Authentication\Token\TokenInterface')->getMock();
         $service->logout($request, $response, $token);
+        $cookie = $request->attributes->get(RememberMeServicesInterface::COOKIE_ATTR_NAME);
+        $this->assertInstanceOf('Symfony\Component\HttpFoundation\Cookie', $cookie);
+        $this->assertTrue($cookie->isCleared());
+        $this->assertSame($options['name'], $cookie->getName());
+        $this->assertSame($options['path'], $cookie->getPath());
+        $this->assertSame($options['domain'], $cookie->getDomain());
+        $this->assertSame($options['secure'], $cookie->isSecure());
+        $this->assertSame($options['httponly'], $cookie->isHttpOnly());
+    }
 
-        $this->assertTrue($request->attributes->get(RememberMeServicesInterface::COOKIE_ATTR_NAME)->isCleared());
+    public function provideOptionsForLogout()
+    {
+        return array(
+            array(array('name' => 'foo', 'path' => '/', 'domain' => null, 'secure' => false, 'httponly' => true)),
+            array(array('name' => 'foo', 'path' => '/bar', 'domain' => 'baz.com', 'secure' => true, 'httponly' => false)),
+        );
     }
 
     public function testLoginFail()
@@ -109,8 +126,8 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
         $service = $this->getService(null, array('name' => 'foo', 'always_remember_me' => true, 'path' => null, 'domain' => null));
         $request = new Request();
         $response = new Response();
-        $account = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
-        $token = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\TokenInterface');
+        $account = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
+        $token = $this->getMockBuilder('Symfony\Component\Security\Core\Authentication\Token\TokenInterface')->getMock();
         $token
             ->expects($this->once())
             ->method('getUser')
@@ -132,8 +149,8 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
         $service = $this->getService(null, array('name' => 'foo', 'always_remember_me' => false, 'remember_me_parameter' => 'foo', 'path' => null, 'domain' => null));
         $request = new Request();
         $response = new Response();
-        $account = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
-        $token = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\TokenInterface');
+        $account = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
+        $token = $this->getMockBuilder('Symfony\Component\Security\Core\Authentication\Token\TokenInterface')->getMock();
         $token
             ->expects($this->once())
             ->method('getUser')
@@ -156,8 +173,8 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
         $service = $this->getService(null, array('name' => 'foo', 'always_remember_me' => true, 'path' => null, 'domain' => null));
         $request = new Request();
         $response = new Response();
-        $account = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
-        $token = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\TokenInterface');
+        $account = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
+        $token = $this->getMockBuilder('Symfony\Component\Security\Core\Authentication\Token\TokenInterface')->getMock();
         $token
             ->expects($this->once())
             ->method('getUser')
@@ -183,8 +200,8 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
         $request = new Request();
         $request->request->set('foo', array('bar' => $value));
         $response = new Response();
-        $account = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
-        $token = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\TokenInterface');
+        $account = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
+        $token = $this->getMockBuilder('Symfony\Component\Security\Core\Authentication\Token\TokenInterface')->getMock();
         $token
             ->expects($this->once())
             ->method('getUser')
@@ -210,8 +227,8 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
         $request = new Request();
         $request->request->set('foo', $value);
         $response = new Response();
-        $account = $this->getMock('Symfony\Component\Security\Core\User\UserInterface');
-        $token = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\TokenInterface');
+        $account = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserInterface')->getMock();
+        $token = $this->getMockBuilder('Symfony\Component\Security\Core\Authentication\Token\TokenInterface')->getMock();
         $token
             ->expects($this->once())
             ->method('getUser')
@@ -234,6 +251,7 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
             array('1'),
             array('on'),
             array('yes'),
+            array(true),
         );
     }
 
@@ -250,7 +268,7 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException InvalidArgumentException
+     * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage cookie delimiter
      */
     public function testThereShouldBeNoCookieDelimiterInCookieParts()
@@ -274,7 +292,7 @@ class AbstractRememberMeServicesTest extends \PHPUnit_Framework_TestCase
 
     protected function getProvider()
     {
-        $provider = $this->getMock('Symfony\Component\Security\Core\User\UserProviderInterface');
+        $provider = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserProviderInterface')->getMock();
         $provider
             ->expects($this->any())
             ->method('supportsClass')

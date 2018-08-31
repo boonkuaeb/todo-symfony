@@ -25,9 +25,6 @@ use Symfony\Component\Validator\ConstraintValidator;
  */
 class UniqueEntityValidator extends ConstraintValidator
 {
-    /**
-     * @var ManagerRegistry
-     */
     private $registry;
 
     public function __construct(ManagerRegistry $registry)
@@ -62,6 +59,10 @@ class UniqueEntityValidator extends ConstraintValidator
             throw new ConstraintDefinitionException('At least one field has to be specified.');
         }
 
+        if (null === $entity) {
+            return;
+        }
+
         if ($constraint->em) {
             $em = $this->registry->getManager($constraint->em);
 
@@ -80,16 +81,24 @@ class UniqueEntityValidator extends ConstraintValidator
         /* @var $class \Doctrine\Common\Persistence\Mapping\ClassMetadata */
 
         $criteria = array();
+        $hasNullValue = false;
+
         foreach ($fields as $fieldName) {
             if (!$class->hasField($fieldName) && !$class->hasAssociation($fieldName)) {
                 throw new ConstraintDefinitionException(sprintf('The field "%s" is not mapped by Doctrine, so it cannot be validated for uniqueness.', $fieldName));
             }
 
-            $criteria[$fieldName] = $class->reflFields[$fieldName]->getValue($entity);
+            $fieldValue = $class->reflFields[$fieldName]->getValue($entity);
 
-            if ($constraint->ignoreNull && null === $criteria[$fieldName]) {
-                return;
+            if (null === $fieldValue) {
+                $hasNullValue = true;
             }
+
+            if ($constraint->ignoreNull && null === $fieldValue) {
+                continue;
+            }
+
+            $criteria[$fieldName] = $fieldValue;
 
             if (null !== $criteria[$fieldName] && $class->hasAssociation($fieldName)) {
                 /* Ensure the Proxy is initialized before using reflection to
@@ -97,22 +106,26 @@ class UniqueEntityValidator extends ConstraintValidator
                  * getter methods in the Proxy are being bypassed.
                  */
                 $em->initializeObject($criteria[$fieldName]);
-
-                $relatedClass = $em->getClassMetadata($class->getAssociationTargetClass($fieldName));
-                $relatedId = $relatedClass->getIdentifierValues($criteria[$fieldName]);
-
-                if (count($relatedId) > 1) {
-                    throw new ConstraintDefinitionException(
-                        'Associated entities are not allowed to have more than one identifier field to be '.
-                        'part of a unique constraint in: '.$class->getName().'#'.$fieldName
-                    );
-                }
-                $criteria[$fieldName] = array_pop($relatedId);
             }
+        }
+
+        // validation doesn't fail if one of the fields is null and if null values should be ignored
+        if ($hasNullValue && $constraint->ignoreNull) {
+            return;
+        }
+
+        // skip validation if there are no criteria (this can happen when the
+        // "ignoreNull" option is enabled and fields to be checked are null
+        if (empty($criteria)) {
+            return;
         }
 
         $repository = $em->getRepository(get_class($entity));
         $result = $repository->{$constraint->repositoryMethod}($criteria);
+
+        if ($result instanceof \IteratorAggregate) {
+            $result = $result->getIterator();
+        }
 
         /* If the result is a MongoCursor, it must be advanced to the first
          * element. Rewinding should have no ill effect if $result is another
@@ -120,15 +133,23 @@ class UniqueEntityValidator extends ConstraintValidator
          */
         if ($result instanceof \Iterator) {
             $result->rewind();
-        } elseif (is_array($result)) {
+            if ($result instanceof \Countable && 1 < \count($result)) {
+                $result = array($result->current(), $result->current());
+            } else {
+                $result = $result->current();
+                $result = null === $result ? array() : array($result);
+            }
+        } elseif (\is_array($result)) {
             reset($result);
+        } else {
+            $result = null === $result ? array() : array($result);
         }
 
         /* If no entity matched the query criteria or a single entity matched,
          * which is the same as the entity being validated, the criteria is
          * unique.
          */
-        if (0 === count($result) || (1 === count($result) && $entity === ($result instanceof \Iterator ? $result->current() : current($result)))) {
+        if (!$result || (1 === \count($result) && current($result) === $entity)) {
             return;
         }
 

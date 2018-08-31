@@ -157,14 +157,11 @@ class JsonDescriptor extends Descriptor
     {
         $key = isset($options['parameter']) ? $options['parameter'] : '';
 
-        $this->writeData(array($key => $this->formatParameter($parameter)), $options);
+        $this->writeData(array($key => $parameter), $options);
     }
 
     /**
      * Writes data as json.
-     *
-     * @param array $data
-     * @param array $options
      *
      * @return array|string
      */
@@ -180,8 +177,6 @@ class JsonDescriptor extends Descriptor
     }
 
     /**
-     * @param Route $route
-     *
      * @return array
      */
     protected function getRouteData(Route $route)
@@ -268,8 +263,6 @@ class JsonDescriptor extends Descriptor
     }
 
     /**
-     * @param Alias $alias
-     *
      * @return array
      */
     private function getContainerAliasData(Alias $alias)

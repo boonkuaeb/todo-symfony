@@ -18,37 +18,22 @@ use Symfony\Component\Form\Exception\RuntimeException;
 /**
  * A utility for reading object IDs.
  *
- * @since  1.0
  * @author Bernhard Schussek <bschussek@gmail.com>
  *
- * @internal This class is meant for internal use only.
+ * @internal this class is meant for internal use only
  */
 class IdReader
 {
-    /**
-     * @var ObjectManager
-     */
     private $om;
-
-    /**
-     * @var ClassMetadata
-     */
     private $classMetadata;
-
-    /**
-     * @var bool
-     */
     private $singleId;
-
-    /**
-     * @var bool
-     */
     private $intId;
+    private $idField;
 
     /**
-     * @var string
+     * @var IdReader|null
      */
-    private $idField;
+    private $associationIdReader;
 
     public function __construct(ObjectManager $om, ClassMetadata $classMetadata)
     {
@@ -60,13 +45,23 @@ class IdReader
         $this->singleId = 1 === count($ids);
         $this->intId = $this->singleId && in_array($idType, array('integer', 'smallint', 'bigint'));
         $this->idField = current($ids);
+
+        // single field association are resolved, since the schema column could be an int
+        if ($this->singleId && $classMetadata->hasAssociation($this->idField)) {
+            $this->associationIdReader = new self($om, $om->getClassMetadata(
+                $classMetadata->getAssociationTargetClass($this->idField)
+            ));
+
+            $this->singleId = $this->associationIdReader->isSingleId();
+            $this->intId = $this->associationIdReader->isIntId();
+        }
     }
 
     /**
      * Returns whether the class has a single-column ID.
      *
-     * @return bool Returns `true` if the class has a single-column ID and
-     *              `false` otherwise.
+     * @return bool returns `true` if the class has a single-column ID and
+     *              `false` otherwise
      */
     public function isSingleId()
     {
@@ -76,8 +71,8 @@ class IdReader
     /**
      * Returns whether the class has a single-column integer ID.
      *
-     * @return bool Returns `true` if the class has a single-column integer ID
-     *              and `false` otherwise.
+     * @return bool returns `true` if the class has a single-column integer ID
+     *              and `false` otherwise
      */
     public function isIntId()
     {
@@ -89,9 +84,9 @@ class IdReader
      *
      * This method assumes that the object has a single-column ID.
      *
-     * @param object $object The object.
+     * @param object $object The object
      *
-     * @return mixed The ID value.
+     * @return mixed The ID value
      */
     public function getIdValue($object)
     {
@@ -100,15 +95,18 @@ class IdReader
         }
 
         if (!$this->om->contains($object)) {
-            throw new RuntimeException(
-                'Entities passed to the choice field must be managed. Maybe '.
-                'persist them in the entity manager?'
-            );
+            throw new RuntimeException(sprintf('Entity of type "%s" passed to the choice field must be managed. Maybe you forget to persist it in the entity manager?', get_class($object)));
         }
 
         $this->om->initializeObject($object);
 
-        return current($this->classMetadata->getIdentifierValues($object));
+        $idValue = current($this->classMetadata->getIdentifierValues($object));
+
+        if ($this->associationIdReader) {
+            $idValue = $this->associationIdReader->getIdValue($idValue);
+        }
+
+        return $idValue;
     }
 
     /**
@@ -116,7 +114,7 @@ class IdReader
      *
      * This method assumes that the object has a single-column ID.
      *
-     * @return string The name of the ID field.
+     * @return string The name of the ID field
      */
     public function getIdField()
     {

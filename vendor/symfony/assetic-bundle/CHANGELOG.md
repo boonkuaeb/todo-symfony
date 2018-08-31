@@ -1,3 +1,48 @@
+2.8.2 / 2017-07-14
+==================
+
+* Fixed deprecation notices when using Symfony 3.3+ and PHP7+
+
+2.8.1 / 2016-11-22
+==================
+
+* Updated the Twig integration to stop using APIs deprecated in Twig 1.27
+
+2.8.0 / 2015-12-28
+==================
+
+### New features
+
+* Added CleanCSS filter config
+
+### Bug fixes
+
+* Use the RequestStack to get the Request instead of the service
+* Fixed support for Symfony 3 resources
+
+2.7.1 / 2015-11-17
+==================
+
+* Added support for Symfony 3
+
+2.7.0 / 2015-09-01
+==================
+
+### New features
+
+* Added configuration for ReactJsx filter
+* Upgraded the watch command to use Spork 0.3
+* Added support for Twig 2
+* Allow configuration of sass/scss filter sourcemap option
+* Add configuration for precision in the sass/scss filter
+* Treat NULL like "all bundles" in the config
+
+### Bug fixes
+
+* Removed usage of the deprecated Symfony APIs for Symfony 2.7+
+* Fix the asset cache in the controller to take the asset dependencies into account
+* Added "web" folder as a default load path for the sass filter
+
 2.6.1 / 2015-01-27
 ==================
 

@@ -15,14 +15,7 @@ use Symfony\Component\Form\Exception\UnexpectedTypeException;
 
 class FormFactory implements FormFactoryInterface
 {
-    /**
-     * @var FormRegistryInterface
-     */
     private $registry;
-
-    /**
-     * @var ResolvedFormTypeFactoryInterface
-     */
     private $resolvedTypeFactory;
 
     public function __construct(FormRegistryInterface $registry, ResolvedFormTypeFactoryInterface $resolvedTypeFactory)
@@ -126,7 +119,13 @@ class FormFactory implements FormFactoryInterface
 
         // user options may override guessed options
         if ($typeGuess) {
-            $options = array_merge($typeGuess->getOptions(), $options);
+            $attrs = array();
+            $typeGuessOptions = $typeGuess->getOptions();
+            if (isset($typeGuessOptions['attr']) && isset($options['attr'])) {
+                $attrs = array('attr' => array_merge($typeGuessOptions['attr'], $options['attr']));
+            }
+
+            $options = array_merge($typeGuessOptions, $options, $attrs);
         }
 
         return $this->createNamedBuilder($property, $type, $data, $options);
@@ -136,9 +135,7 @@ class FormFactory implements FormFactoryInterface
      * Wraps a type into a ResolvedFormTypeInterface implementation and connects
      * it with its parent type.
      *
-     * @param FormTypeInterface $type The type to resolve.
-     *
-     * @return ResolvedFormTypeInterface The resolved type.
+     * @return ResolvedFormTypeInterface The resolved type
      */
     private function resolveType(FormTypeInterface $type)
     {

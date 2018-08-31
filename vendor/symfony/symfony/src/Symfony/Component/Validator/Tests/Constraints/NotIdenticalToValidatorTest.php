@@ -30,7 +30,7 @@ class NotIdenticalToValidatorTest extends AbstractComparisonValidatorTestCase
         return new NotIdenticalToValidator();
     }
 
-    protected function createConstraint(array $options)
+    protected function createConstraint(array $options = null)
     {
         return new NotIdenticalTo($options);
     }
@@ -81,11 +81,6 @@ class NotIdenticalToValidatorTest extends AbstractComparisonValidatorTestCase
             array($date, 'Jan 1, 2000, 12:00 AM', $date, 'Jan 1, 2000, 12:00 AM', 'DateTime'),
             array($object, '2', $object, '2', __NAMESPACE__.'\ComparisonTest_Class'),
         );
-
-        if (version_compare(PHP_VERSION, '>=', '5.5')) {
-            $immutableDate = new \DateTimeImmutable('2000-01-01');
-            $comparisons[] = array($immutableDate, 'Jan 1, 2000, 12:00 AM', $immutableDate, 'Jan 1, 2000, 12:00 AM', 'DateTime');
-        }
 
         return $comparisons;
     }

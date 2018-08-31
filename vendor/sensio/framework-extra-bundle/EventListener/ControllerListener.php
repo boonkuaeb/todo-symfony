@@ -50,15 +50,21 @@ class ControllerListener implements EventSubscriberInterface
      */
     public function onKernelController(FilterControllerEvent $event)
     {
-        if (!is_array($controller = $event->getController())) {
+        $controller = $event->getController();
+
+        if (!is_array($controller) && method_exists($controller, '__invoke')) {
+            $controller = array($controller, '__invoke');
+        }
+
+        if (!is_array($controller)) {
             return;
         }
 
         $className = class_exists('Doctrine\Common\Util\ClassUtils') ? ClassUtils::getClass($controller[0]) : get_class($controller[0]);
-        $object    = new \ReflectionClass($className);
-        $method    = $object->getMethod($controller[1]);
+        $object = new \ReflectionClass($className);
+        $method = $object->getMethod($controller[1]);
 
-        $classConfigurations  = $this->getConfigurations($this->reader->getClassAnnotations($object));
+        $classConfigurations = $this->getConfigurations($this->reader->getClassAnnotations($object));
         $methodConfigurations = $this->getConfigurations($this->reader->getMethodAnnotations($method));
 
         $configurations = array();
@@ -93,8 +99,10 @@ class ControllerListener implements EventSubscriberInterface
             if ($configuration instanceof ConfigurationInterface) {
                 if ($configuration->allowArray()) {
                     $configurations['_'.$configuration->getAliasName()][] = $configuration;
-                } else {
+                } elseif (!isset($configurations['_'.$configuration->getAliasName()])) {
                     $configurations['_'.$configuration->getAliasName()] = $configuration;
+                } else {
+                    throw new \LogicException(sprintf('Multiple "%s" annotations are not allowed.', $configuration->getAliasName()));
                 }
             }
         }

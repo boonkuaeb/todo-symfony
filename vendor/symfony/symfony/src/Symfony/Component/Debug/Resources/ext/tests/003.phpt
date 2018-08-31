@@ -1,7 +1,9 @@
 --TEST--
 Test ErrorHandler in case of fatal error
 --SKIPIF--
-<?php if (!extension_loaded("symfony_debug")) print "skip"; ?>
+<?php if (!extension_loaded('symfony_debug')) {
+    echo 'skip';
+} ?>
 --FILE--
 <?php
 
@@ -56,7 +58,7 @@ Symfony\Component\Debug\Exception\UndefinedFunctionException Object
     [message:protected] => Attempted to call function "notexist" from namespace "Symfony\Component\Debug".
     [string:Exception:private] => 
     [code:protected] => 0
-    [file:protected] => -
+    [file:protected] => %s
     [line:protected] => %d
     [trace:Exception:private] => Array
         (

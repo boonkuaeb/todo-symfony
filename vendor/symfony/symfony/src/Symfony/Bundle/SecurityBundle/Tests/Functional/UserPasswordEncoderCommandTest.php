@@ -18,7 +18,7 @@ use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
 use Symfony\Component\Security\Core\Encoder\Pbkdf2PasswordEncoder;
 
 /**
- * Tests UserPasswordEncoderCommand
+ * Tests UserPasswordEncoderCommand.
  *
  * @author Sarah Khalil <mkhalil.sarah@gmail.com>
  */
@@ -33,8 +33,8 @@ class UserPasswordEncoderCommandTest extends WebTestCase
             'password' => 'password',
             'user-class' => 'Symfony\Component\Security\Core\User\User',
             '--empty-salt' => true,
-        ));
-        $expected = file_get_contents(__DIR__.'/app/PasswordEncode/emptysalt.txt');
+        ), array('decorated' => false));
+        $expected = str_replace("\n", PHP_EOL, file_get_contents(__DIR__.'/app/PasswordEncode/emptysalt.txt'));
 
         $this->assertEquals($expected, $this->passwordEncoderCommandTester->getDisplay());
     }
@@ -129,7 +129,12 @@ class UserPasswordEncoderCommandTest extends WebTestCase
 
     public function testEncodePasswordNoConfigForGivenUserClass()
     {
-        $this->setExpectedException('\RuntimeException', 'No encoder has been configured for account "Foo\Bar\User".');
+        if (method_exists($this, 'expectException')) {
+            $this->expectException('\RuntimeException');
+            $this->expectExceptionMessage('No encoder has been configured for account "Foo\Bar\User".');
+        } else {
+            $this->setExpectedException('\RuntimeException', 'No encoder has been configured for account "Foo\Bar\User".');
+        }
 
         $this->passwordEncoderCommandTester->execute(array(
             'command' => 'security:encode-password',

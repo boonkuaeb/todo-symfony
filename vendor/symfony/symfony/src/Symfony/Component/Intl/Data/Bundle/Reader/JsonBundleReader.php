@@ -30,19 +30,22 @@ class JsonBundleReader implements BundleReaderInterface
     {
         $fileName = $path.'/'.$locale.'.json';
 
+        // prevent directory traversal attacks
+        if (dirname($fileName) !== $path) {
+            throw new ResourceBundleNotFoundException(sprintf('The resource bundle "%s" does not exist.', $fileName));
+        }
+
         if (!file_exists($fileName)) {
             throw new ResourceBundleNotFoundException(sprintf(
-                'The resource bundle "%s/%s.json" does not exist.',
-                $path,
-                $locale
+                'The resource bundle "%s" does not exist.',
+                $fileName
             ));
         }
 
         if (!is_file($fileName)) {
             throw new RuntimeException(sprintf(
-                'The resource bundle "%s/%s.json" is not a file.',
-                $path,
-                $locale
+                'The resource bundle "%s" is not a file.',
+                $fileName
             ));
         }
 
@@ -50,9 +53,8 @@ class JsonBundleReader implements BundleReaderInterface
 
         if (null === $data) {
             throw new RuntimeException(sprintf(
-                'The resource bundle "%s/%s.json" contains invalid JSON: %s',
-                $path,
-                $locale,
+                'The resource bundle "%s" contains invalid JSON: %s',
+                $fileName,
                 self::getLastJsonError()
             ));
         }
@@ -63,7 +65,7 @@ class JsonBundleReader implements BundleReaderInterface
     /**
      * @return string The last error message created by {@link json_decode()}
      *
-     * @link http://de2.php.net/manual/en/function.json-last-error-msg.php#113243
+     * @see http://de2.php.net/manual/en/function.json-last-error-msg.php#113243
      */
     private static function getLastJsonError()
     {

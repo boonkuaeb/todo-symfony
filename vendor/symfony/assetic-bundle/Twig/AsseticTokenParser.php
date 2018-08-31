@@ -46,7 +46,7 @@ class AsseticTokenParser extends BaseAsseticTokenParser
             // check the bundle
             $templateRef = null;
             try {
-                $templateRef = $this->templateNameParser->parse($this->parser->getStream()->getFilename());
+                $templateRef = $this->templateNameParser->parse($this->parser->getStream()->getSourceContext()->getName());
             } catch (\RuntimeException $e) {
                 // this happens when the filename isn't a Bundle:* url
                 // and it contains ".."
@@ -61,6 +61,11 @@ class AsseticTokenParser extends BaseAsseticTokenParser
         }
 
         return parent::parse($token);
+    }
+
+    protected function createBodyNode(AssetInterface $asset, \Twig_Node $body, array $inputs, array $filters, $name, array $attributes = array(), $lineno = 0, $tag = null)
+    {
+        return new AsseticNode($asset, $body, $inputs, $filters, $name, $attributes, $lineno, $tag);
     }
 
     protected function createNode(AssetInterface $asset, \Twig_NodeInterface $body, array $inputs, array $filters, $name, array $attributes = array(), $lineno = 0, $tag = null)

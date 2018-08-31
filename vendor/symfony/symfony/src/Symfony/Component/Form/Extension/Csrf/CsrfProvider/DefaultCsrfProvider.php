@@ -11,7 +11,9 @@
 
 namespace Symfony\Component\Form\Extension\Csrf\CsrfProvider;
 
-@trigger_error('The '.__NAMESPACE__.'\DefaultCsrfProvider is deprecated since version 2.4 and will be removed in version 3.0. Use the \Symfony\Component\Security\Csrf\TokenStorage\NativeSessionTokenStorage class instead.', E_USER_DEPRECATED);
+use Symfony\Component\Security\Core\Util\StringUtils;
+
+@trigger_error('The '.__NAMESPACE__.'\DefaultCsrfProvider is deprecated since Symfony 2.4 and will be removed in version 3.0. Use the \Symfony\Component\Security\Csrf\TokenStorage\NativeSessionTokenStorage class instead.', E_USER_DEPRECATED);
 
 /**
  * Default implementation of CsrfProviderInterface.
@@ -28,11 +30,6 @@ namespace Symfony\Component\Form\Extension\Csrf\CsrfProvider;
  */
 class DefaultCsrfProvider implements CsrfProviderInterface
 {
-    /**
-     * A secret value used for generating the CSRF token.
-     *
-     * @var string
-     */
     protected $secret;
 
     /**
@@ -61,7 +58,17 @@ class DefaultCsrfProvider implements CsrfProviderInterface
      */
     public function isCsrfTokenValid($intention, $token)
     {
-        return $token === $this->generateCsrfToken($intention);
+        $expectedToken = $this->generateCsrfToken($intention);
+
+        if (function_exists('hash_equals')) {
+            return hash_equals($expectedToken, $token);
+        }
+
+        if (class_exists('Symfony\Component\Security\Core\Util\StringUtils')) {
+            return StringUtils::equals($expectedToken, $token);
+        }
+
+        return $token === $expectedToken;
     }
 
     /**
@@ -73,7 +80,7 @@ class DefaultCsrfProvider implements CsrfProviderInterface
      */
     protected function getSessionId()
     {
-        if (PHP_VERSION_ID >= 50400) {
+        if (\PHP_VERSION_ID >= 50400) {
             if (PHP_SESSION_NONE === session_status()) {
                 session_start();
             }

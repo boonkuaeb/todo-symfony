@@ -38,7 +38,7 @@ class AssetsInstallCommand extends ContainerAwareCommand
             ->addOption('symlink', null, InputOption::VALUE_NONE, 'Symlinks the assets instead of copying it')
             ->addOption('relative', null, InputOption::VALUE_NONE, 'Make relative symlinks')
             ->setDescription('Installs bundles web assets under a public web directory')
-            ->setHelp(<<<EOT
+            ->setHelp(<<<'EOT'
 The <info>%command.name%</info> command installs bundle assets into a given
 directory (e.g. the <comment>web</comment> directory).
 
@@ -89,9 +89,12 @@ EOT
             $output->writeln('Installing assets as <comment>hard copies</comment>.');
         }
 
+        $validAssetDirs = array();
         foreach ($this->getContainer()->get('kernel')->getBundles() as $bundle) {
             if (is_dir($originDir = $bundle->getPath().'/Resources/public')) {
-                $targetDir = $bundlesDir.preg_replace('/bundle$/', '', strtolower($bundle->getName()));
+                $assetDir = preg_replace('/bundle$/', '', strtolower($bundle->getName()));
+                $targetDir = $bundlesDir.$assetDir;
+                $validAssetDirs[] = $assetDir;
 
                 $output->writeln(sprintf('Installing assets for <comment>%s</comment> into <comment>%s</comment>', $bundle->getNamespace(), $targetDir));
 
@@ -133,6 +136,10 @@ EOT
                 }
             }
         }
+
+        // remove the assets of the bundles that no longer exist
+        $dirsToRemove = Finder::create()->depth(0)->directories()->exclude($validAssetDirs)->in($bundlesDir);
+        $filesystem->remove($dirsToRemove);
     }
 
     /**

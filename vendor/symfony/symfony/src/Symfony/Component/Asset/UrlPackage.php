@@ -39,10 +39,11 @@ class UrlPackage extends Package
     private $sslPackage;
 
     /**
-     * @param string|array             $baseUrls        Base asset URLs
+     * @param string|string[]          $baseUrls        Base asset URLs
      * @param VersionStrategyInterface $versionStrategy The version strategy
+     * @param ContextInterface|null    $context         Context
      */
-    public function __construct($baseUrls = array(), VersionStrategyInterface $versionStrategy, ContextInterface $context = null)
+    public function __construct($baseUrls, VersionStrategyInterface $versionStrategy, ContextInterface $context = null)
     {
         parent::__construct($versionStrategy, $context);
 
@@ -80,6 +81,10 @@ class UrlPackage extends Package
 
         $url = $this->getVersionStrategy()->applyVersion($path);
 
+        if ($this->isAbsoluteUrl($url)) {
+            return $url;
+        }
+
         if ($url && '/' != $url[0]) {
             $url = '/'.$url;
         }
@@ -107,15 +112,15 @@ class UrlPackage extends Package
      * Determines which base URL to use for the given path.
      *
      * Override this method to change the default distribution strategy.
-     * This method should always return the same base URL for a given path.
+     * This method should always return the same base URL index for a given path.
      *
      * @param string $path
      *
-     * @return string The base URL for the given path
+     * @return int The base URL index for the given path
      */
     protected function chooseBaseUrl($path)
     {
-        return fmod(hexdec(substr(hash('sha256', $path), 0, 10)), count($this->baseUrls));
+        return (int) fmod(hexdec(substr(hash('sha256', $path), 0, 10)), count($this->baseUrls));
     }
 
     private function getSslUrls($urls)

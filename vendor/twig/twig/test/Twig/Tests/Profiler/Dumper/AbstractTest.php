@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-abstract class Twig_Tests_Profiler_Dumper_AbstractTest extends PHPUnit_Framework_TestCase
+abstract class Twig_Tests_Profiler_Dumper_AbstractTest extends \PHPUnit\Framework\TestCase
 {
     protected function getProfile()
     {
@@ -73,11 +73,11 @@ abstract class Twig_Tests_Profiler_Dumper_AbstractTest extends PHPUnit_Framework
 
     /**
      * @param string $name
-     * @param float $duration
-     * @param bool $isTemplate
+     * @param float  $duration
+     * @param bool   $isTemplate
      * @param string $type
      * @param string $templateName
-     * @param array $subProfiles
+     * @param array  $subProfiles
      *
      * @return Twig_Profiler_Profile
      */

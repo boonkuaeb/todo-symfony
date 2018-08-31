@@ -18,8 +18,6 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
- *
- * @api
  */
 class TypeValidator extends ConstraintValidator
 {
@@ -37,7 +35,7 @@ class TypeValidator extends ConstraintValidator
         }
 
         $type = strtolower($constraint->type);
-        $type = $type == 'boolean' ? 'bool' : $constraint->type;
+        $type = 'boolean' == $type ? 'bool' : $constraint->type;
         $isFunction = 'is_'.$type;
         $ctypeFunction = 'ctype_'.$type;
 

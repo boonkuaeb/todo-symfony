@@ -11,9 +11,10 @@
 
 namespace Symfony\Component\Yaml\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Inline;
 
-class InlineTest extends \PHPUnit_Framework_TestCase
+class InlineTest extends TestCase
 {
     /**
      * @dataProvider getTestsForParse
@@ -173,6 +174,24 @@ class InlineTest extends \PHPUnit_Framework_TestCase
         Inline::parse('{ foo: * #foo }');
     }
 
+    /**
+     * @dataProvider getDataForIsHash
+     */
+    public function testIsHash($array, $expected)
+    {
+        $this->assertSame($expected, Inline::isHash($array));
+    }
+
+    public function getDataForIsHash()
+    {
+        return array(
+            array(array(), false),
+            array(array(1, 2, 3), false),
+            array(array(2 => 1, 1 => 2, 0 => 3), true),
+            array(array('foo' => 1, 'bar' => 2), true),
+        );
+    }
+
     public function getTestsForParse()
     {
         return array(
@@ -206,7 +225,7 @@ class InlineTest extends \PHPUnit_Framework_TestCase
             array("'on'", 'on'),
             array("'off'", 'off'),
 
-            array('2007-10-30', mktime(0, 0, 0, 10, 30, 2007)),
+            array('2007-10-30', gmmktime(0, 0, 0, 10, 30, 2007)),
             array('2007-10-30T02:59:43Z', gmmktime(2, 59, 43, 10, 30, 2007)),
             array('2007-10-30 02:59:43 Z', gmmktime(2, 59, 43, 10, 30, 2007)),
             array('1960-10-30 02:59:43 Z', gmmktime(2, 59, 43, 10, 30, 1960)),
@@ -273,7 +292,7 @@ class InlineTest extends \PHPUnit_Framework_TestCase
             array("'#cfcfcf'", '#cfcfcf'),
             array('::form_base.html.twig', '::form_base.html.twig'),
 
-            array('2007-10-30', mktime(0, 0, 0, 10, 30, 2007)),
+            array('2007-10-30', gmmktime(0, 0, 0, 10, 30, 2007)),
             array('2007-10-30T02:59:43Z', gmmktime(2, 59, 43, 10, 30, 2007)),
             array('2007-10-30 02:59:43 Z', gmmktime(2, 59, 43, 10, 30, 2007)),
             array('1960-10-30 02:59:43 Z', gmmktime(2, 59, 43, 10, 30, 1960)),
@@ -293,8 +312,8 @@ class InlineTest extends \PHPUnit_Framework_TestCase
             array('{ foo  : bar, bar : foo,  false  :   false,  null  :   null,  integer :  12  }', (object) array('foo' => 'bar', 'bar' => 'foo', 'false' => false, 'null' => null, 'integer' => 12)),
             array('{foo: \'bar\', bar: \'foo: bar\'}', (object) array('foo' => 'bar', 'bar' => 'foo: bar')),
             array('{\'foo\': \'bar\', "bar": \'foo: bar\'}', (object) array('foo' => 'bar', 'bar' => 'foo: bar')),
-            array('{\'foo\'\'\': \'bar\', "bar\"": \'foo: bar\'}', (object) array('foo\'' => 'bar', "bar\"" => 'foo: bar')),
-            array('{\'foo: \': \'bar\', "bar: ": \'foo: bar\'}', (object) array('foo: ' => 'bar', "bar: " => 'foo: bar')),
+            array('{\'foo\'\'\': \'bar\', "bar\"": \'foo: bar\'}', (object) array('foo\'' => 'bar', 'bar"' => 'foo: bar')),
+            array('{\'foo: \': \'bar\', "bar: ": \'foo: bar\'}', (object) array('foo: ' => 'bar', 'bar: ' => 'foo: bar')),
 
             // nested sequences and mappings
             array('[foo, [bar, foo]]', array('foo', array('bar', 'foo'))),
@@ -379,6 +398,47 @@ class InlineTest extends \PHPUnit_Framework_TestCase
             array('[foo, { bar: foo, foo: [foo, { bar: foo }] }, [foo, { bar: foo }]]', array('foo', array('bar' => 'foo', 'foo' => array('foo', array('bar' => 'foo'))), array('foo', array('bar' => 'foo')))),
 
             array('[foo, \'@foo.baz\', { \'%foo%\': \'foo is %foo%\', bar: \'%foo%\' }, true, \'@service_container\']', array('foo', '@foo.baz', array('%foo%' => 'foo is %foo%', 'bar' => '%foo%'), true, '@service_container')),
+
+            array('{ foo: { bar: { 1: 2, baz: 3 } } }', array('foo' => array('bar' => array(1 => 2, 'baz' => 3)))),
         );
+    }
+
+    /**
+     * @expectedException \Symfony\Component\Yaml\Exception\ParseException
+     * @expectedExceptionMessage Malformed inline YAML string: {this, is not, supported}.
+     */
+    public function testNotSupportedMissingValue()
+    {
+        Inline::parse('{this, is not, supported}');
+    }
+
+    public function testVeryLongQuotedStrings()
+    {
+        $longStringWithQuotes = str_repeat("x\r\n\\\"x\"x", 1000);
+
+        $yamlString = Inline::dump(array('longStringWithQuotes' => $longStringWithQuotes));
+        $arrayFromYaml = Inline::parse($yamlString);
+
+        $this->assertEquals($longStringWithQuotes, $arrayFromYaml['longStringWithQuotes']);
+    }
+
+    public function testBooleanMappingKeysAreConvertedToStrings()
+    {
+        $this->assertSame(array('false' => 'foo'), Inline::parse('{false: foo}'));
+        $this->assertSame(array('true' => 'foo'), Inline::parse('{true: foo}'));
+    }
+
+    public function testTheEmptyStringIsAValidMappingKey()
+    {
+        $this->assertSame(array('' => 'foo'), Inline::parse('{ "": foo }'));
+    }
+
+    /**
+     * @expectedException \Symfony\Component\Yaml\Exception\ParseException
+     * @expectedExceptionMessage Unexpected end of line, expected one of ",}".
+     */
+    public function testUnfinishedInlineMap()
+    {
+        Inline::parse("{abc: 'def'");
     }
 }

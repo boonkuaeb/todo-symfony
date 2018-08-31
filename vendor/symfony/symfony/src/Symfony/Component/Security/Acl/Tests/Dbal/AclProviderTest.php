@@ -11,13 +11,17 @@
 
 namespace Symfony\Component\Security\Acl\Tests\Dbal;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Acl\Dbal\AclProvider;
 use Symfony\Component\Security\Acl\Domain\PermissionGrantingStrategy;
 use Symfony\Component\Security\Acl\Domain\ObjectIdentity;
 use Symfony\Component\Security\Acl\Dbal\Schema;
 use Doctrine\DBAL\DriverManager;
 
-class AclProviderTest extends \PHPUnit_Framework_TestCase
+/**
+ * @requires extension pdo_sqlite
+ */
+class AclProviderTest extends TestCase
 {
     protected $con;
     protected $insertClassStmt;
@@ -141,10 +145,6 @@ class AclProviderTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        if (!class_exists('PDO') || !in_array('sqlite', \PDO::getAvailableDrivers())) {
-            self::markTestSkipped('This test requires SQLite support in your environment');
-        }
-
         $this->con = DriverManager::getConnection(array(
             'driver' => 'pdo_sqlite',
             'memory' => true,

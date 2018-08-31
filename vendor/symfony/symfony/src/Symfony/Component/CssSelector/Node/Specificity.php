@@ -27,24 +27,11 @@ class Specificity
     const B_FACTOR = 10;
     const C_FACTOR = 1;
 
-    /**
-     * @var int
-     */
     private $a;
-
-    /**
-     * @var int
-     */
     private $b;
-
-    /**
-     * @var int
-     */
     private $c;
 
     /**
-     * Constructor.
-     *
      * @param int $a
      * @param int $b
      * @param int $c
@@ -57,9 +44,7 @@ class Specificity
     }
 
     /**
-     * @param Specificity $specificity
-     *
-     * @return Specificity
+     * @return self
      */
     public function plus(Specificity $specificity)
     {
@@ -78,9 +63,7 @@ class Specificity
 
     /**
      * Returns -1 if the object specificity is lower than the argument,
-     * 0 if they are equal, and 1 if the argument is lower
-     *
-     * @param Specificity $specificity
+     * 0 if they are equal, and 1 if the argument is lower.
      *
      * @return int
      */

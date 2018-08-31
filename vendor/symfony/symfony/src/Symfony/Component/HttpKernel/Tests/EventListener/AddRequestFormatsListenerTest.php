@@ -11,16 +11,17 @@
 
 namespace Symfony\Component\HttpKernel\Tests\EventListener;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\EventListener\AddRequestFormatsListener;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
- * Test AddRequestFormatsListener class
+ * Test AddRequestFormatsListener class.
  *
  * @author Gildas Quemener <gildas.quemener@gmail.com>
  */
-class AddRequestFormatsListenerTest extends \PHPUnit_Framework_TestCase
+class AddRequestFormatsListenerTest extends TestCase
 {
     /**
      * @var AddRequestFormatsListener
@@ -45,7 +46,7 @@ class AddRequestFormatsListenerTest extends \PHPUnit_Framework_TestCase
     public function testRegisteredEvent()
     {
         $this->assertEquals(
-            array(KernelEvents::REQUEST => 'onKernelRequest'),
+            array(KernelEvents::REQUEST => array('onKernelRequest', 1)),
             AddRequestFormatsListener::getSubscribedEvents()
         );
     }
@@ -64,7 +65,7 @@ class AddRequestFormatsListenerTest extends \PHPUnit_Framework_TestCase
 
     protected function getRequestMock()
     {
-        return $this->getMock('Symfony\Component\HttpFoundation\Request');
+        return $this->getMockBuilder('Symfony\Component\HttpFoundation\Request')->getMock();
     }
 
     protected function getGetResponseEventMock(Request $request)

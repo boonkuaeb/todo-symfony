@@ -12,8 +12,9 @@
 namespace Symfony\Bridge\Doctrine\Form;
 
 use Doctrine\Common\Persistence\ManagerRegistry;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\Common\Persistence\Mapping\MappingException;
+use Doctrine\DBAL\Types\Type;
+use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\Mapping\MappingException as LegacyMappingException;
 use Symfony\Component\Form\FormTypeGuesserInterface;
 use Symfony\Component\Form\Guess\Guess;
@@ -51,28 +52,28 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
         }
 
         switch ($metadata->getTypeOfField($property)) {
-            case 'array':
+            case Type::TARRAY:
                 return new TypeGuess('collection', array(), Guess::MEDIUM_CONFIDENCE);
-            case 'boolean':
+            case Type::BOOLEAN:
                 return new TypeGuess('checkbox', array(), Guess::HIGH_CONFIDENCE);
-            case 'datetime':
+            case Type::DATETIME:
+            case Type::DATETIMETZ:
             case 'vardatetime':
-            case 'datetimetz':
                 return new TypeGuess('datetime', array(), Guess::HIGH_CONFIDENCE);
-            case 'date':
+            case Type::DATE:
                 return new TypeGuess('date', array(), Guess::HIGH_CONFIDENCE);
-            case 'time':
+            case Type::TIME:
                 return new TypeGuess('time', array(), Guess::HIGH_CONFIDENCE);
-            case 'decimal':
-            case 'float':
+            case Type::DECIMAL:
+            case Type::FLOAT:
                 return new TypeGuess('number', array(), Guess::MEDIUM_CONFIDENCE);
-            case 'integer':
-            case 'bigint':
-            case 'smallint':
+            case Type::INTEGER:
+            case Type::BIGINT:
+            case Type::SMALLINT:
                 return new TypeGuess('integer', array(), Guess::MEDIUM_CONFIDENCE);
-            case 'string':
+            case Type::STRING:
                 return new TypeGuess('text', array(), Guess::MEDIUM_CONFIDENCE);
-            case 'text':
+            case Type::TEXT:
                 return new TypeGuess('textarea', array(), Guess::MEDIUM_CONFIDENCE);
             default:
                 return new TypeGuess('text', array(), Guess::LOW_CONFIDENCE);
@@ -94,8 +95,8 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
         $classMetadata = $classMetadatas[0];
 
         // Check whether the field exists and is nullable or not
-        if ($classMetadata->hasField($property)) {
-            if (!$classMetadata->isNullable($property)) {
+        if (isset($classMetadata->fieldMappings[$property])) {
+            if (!$classMetadata->isNullable($property) && Type::BOOLEAN !== $classMetadata->getTypeOfField($property)) {
                 return new ValueGuess(true, Guess::HIGH_CONFIDENCE);
             }
 
@@ -123,14 +124,14 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
     public function guessMaxLength($class, $property)
     {
         $ret = $this->getMetadata($class);
-        if ($ret && $ret[0]->hasField($property) && !$ret[0]->hasAssociation($property)) {
+        if ($ret && isset($ret[0]->fieldMappings[$property]) && !$ret[0]->hasAssociation($property)) {
             $mapping = $ret[0]->getFieldMapping($property);
 
             if (isset($mapping['length'])) {
                 return new ValueGuess($mapping['length'], Guess::HIGH_CONFIDENCE);
             }
 
-            if (in_array($ret[0]->getTypeOfField($property), array('decimal', 'float'))) {
+            if (in_array($ret[0]->getTypeOfField($property), array(Type::DECIMAL, Type::FLOAT))) {
                 return new ValueGuess(null, Guess::MEDIUM_CONFIDENCE);
             }
         }
@@ -142,8 +143,8 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
     public function guessPattern($class, $property)
     {
         $ret = $this->getMetadata($class);
-        if ($ret && $ret[0]->hasField($property) && !$ret[0]->hasAssociation($property)) {
-            if (in_array($ret[0]->getTypeOfField($property), array('decimal', 'float'))) {
+        if ($ret && isset($ret[0]->fieldMappings[$property]) && !$ret[0]->hasAssociation($property)) {
+            if (in_array($ret[0]->getTypeOfField($property), array(Type::DECIMAL, Type::FLOAT))) {
                 return new ValueGuess(null, Guess::MEDIUM_CONFIDENCE);
             }
         }

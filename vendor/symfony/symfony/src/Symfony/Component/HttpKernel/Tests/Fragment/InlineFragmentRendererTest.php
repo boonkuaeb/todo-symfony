@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\HttpKernel\Tests\Fragment;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Controller\ControllerReference;
 use Symfony\Component\HttpKernel\HttpKernel;
 use Symfony\Component\HttpKernel\Fragment\InlineFragmentRenderer;
@@ -19,8 +20,24 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
-class InlineFragmentRendererTest extends \PHPUnit_Framework_TestCase
+class InlineFragmentRendererTest extends TestCase
 {
+    private $originalTrustedHeaderName;
+
+    protected function setUp()
+    {
+        $this->originalTrustedHeaderNames = array(
+            Request::getTrustedHeaderName(Request::HEADER_CLIENT_IP),
+            Request::getTrustedHeaderName(Request::HEADER_FORWARDED),
+        );
+    }
+
+    protected function tearDown()
+    {
+        Request::setTrustedHeaderName(Request::HEADER_CLIENT_IP, $this->originalTrustedHeaderNames[0]);
+        Request::setTrustedHeaderName(Request::HEADER_FORWARDED, $this->originalTrustedHeaderNames[1]);
+    }
+
     public function testRender()
     {
         $strategy = new InlineFragmentRenderer($this->getKernel($this->returnValue(new Response('foo'))));
@@ -42,16 +59,16 @@ class InlineFragmentRendererTest extends \PHPUnit_Framework_TestCase
         $subRequest = Request::create('/_fragment?_path=_format%3Dhtml%26_locale%3Den%26_controller%3Dmain_controller');
         $subRequest->attributes->replace(array('object' => $object, '_format' => 'html', '_controller' => 'main_controller', '_locale' => 'en'));
         $subRequest->headers->set('x-forwarded-for', array('127.0.0.1'));
-        $subRequest->server->set('HTTP_X_FORWARDED_FOR', '127.0.0.1');
+        $subRequest->headers->set('forwarded', array('for="127.0.0.1";host="localhost";proto=http'));
 
         $strategy = new InlineFragmentRenderer($this->getKernelExpectingRequest($subRequest));
 
-        $strategy->render(new ControllerReference('main_controller', array('object' => $object), array()), Request::create('/'));
+        $this->assertSame('foo', $strategy->render(new ControllerReference('main_controller', array('object' => $object), array()), Request::create('/'))->getContent());
     }
 
     public function testRenderWithObjectsAsAttributesPassedAsObjectsInTheController()
     {
-        $resolver = $this->getMock('Symfony\\Component\\HttpKernel\\Controller\\ControllerResolver', array('getController'));
+        $resolver = $this->getMockBuilder('Symfony\\Component\\HttpKernel\\Controller\\ControllerResolver')->setMethods(array('getController'))->getMock();
         $resolver
             ->expects($this->once())
             ->method('getController')
@@ -69,14 +86,14 @@ class InlineFragmentRendererTest extends \PHPUnit_Framework_TestCase
 
     public function testRenderWithTrustedHeaderDisabled()
     {
-        $trustedHeaderName = Request::getTrustedHeaderName(Request::HEADER_CLIENT_IP);
-
         Request::setTrustedHeaderName(Request::HEADER_CLIENT_IP, '');
+        Request::setTrustedHeaderName(Request::HEADER_FORWARDED, '');
 
-        $strategy = new InlineFragmentRenderer($this->getKernelExpectingRequest(Request::create('/')));
-        $strategy->render('/', Request::create('/'));
+        $expectedSubRequest = Request::create('/');
+        $expectedSubRequest->headers->set('x-forwarded-for', array('127.0.0.1'));
 
-        Request::setTrustedHeaderName(Request::HEADER_CLIENT_IP, $trustedHeaderName);
+        $strategy = new InlineFragmentRenderer($this->getKernelExpectingRequest($expectedSubRequest));
+        $this->assertSame('foo', $strategy->render('/', Request::create('/'))->getContent());
     }
 
     /**
@@ -84,7 +101,7 @@ class InlineFragmentRendererTest extends \PHPUnit_Framework_TestCase
      */
     public function testRenderExceptionNoIgnoreErrors()
     {
-        $dispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
+        $dispatcher = $this->getMockBuilder('Symfony\Component\EventDispatcher\EventDispatcherInterface')->getMock();
         $dispatcher->expects($this->never())->method('dispatch');
 
         $strategy = new InlineFragmentRenderer($this->getKernel($this->throwException(new \RuntimeException('foo'))), $dispatcher);
@@ -94,7 +111,7 @@ class InlineFragmentRendererTest extends \PHPUnit_Framework_TestCase
 
     public function testRenderExceptionIgnoreErrors()
     {
-        $dispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
+        $dispatcher = $this->getMockBuilder('Symfony\Component\EventDispatcher\EventDispatcherInterface')->getMock();
         $dispatcher->expects($this->once())->method('dispatch')->with(KernelEvents::EXCEPTION);
 
         $strategy = new InlineFragmentRenderer($this->getKernel($this->throwException(new \RuntimeException('foo'))), $dispatcher);
@@ -114,7 +131,7 @@ class InlineFragmentRendererTest extends \PHPUnit_Framework_TestCase
 
     private function getKernel($returnValue)
     {
-        $kernel = $this->getMock('Symfony\Component\HttpKernel\HttpKernelInterface');
+        $kernel = $this->getMockBuilder('Symfony\Component\HttpKernel\HttpKernelInterface')->getMock();
         $kernel
             ->expects($this->any())
             ->method('handle')
@@ -124,25 +141,9 @@ class InlineFragmentRendererTest extends \PHPUnit_Framework_TestCase
         return $kernel;
     }
 
-    /**
-     * Creates a Kernel expecting a request equals to $request
-     * Allows delta in comparison in case REQUEST_TIME changed by 1 second.
-     */
-    private function getKernelExpectingRequest(Request $request)
-    {
-        $kernel = $this->getMock('Symfony\Component\HttpKernel\HttpKernelInterface');
-        $kernel
-            ->expects($this->any())
-            ->method('handle')
-            ->with($this->equalTo($request, 1))
-        ;
-
-        return $kernel;
-    }
-
     public function testExceptionInSubRequestsDoesNotMangleOutputBuffers()
     {
-        $resolver = $this->getMock('Symfony\\Component\\HttpKernel\\Controller\\ControllerResolverInterface');
+        $resolver = $this->getMockBuilder('Symfony\\Component\\HttpKernel\\Controller\\ControllerResolverInterface')->getMock();
         $resolver
             ->expects($this->once())
             ->method('getController')
@@ -175,11 +176,10 @@ class InlineFragmentRendererTest extends \PHPUnit_Framework_TestCase
     {
         $expectedSubRequest = Request::create('/');
         $expectedSubRequest->headers->set('Surrogate-Capability', 'abc="ESI/1.0"');
-
         if (Request::getTrustedHeaderName(Request::HEADER_CLIENT_IP)) {
             $expectedSubRequest->headers->set('x-forwarded-for', array('127.0.0.1'));
-            $expectedSubRequest->server->set('HTTP_X_FORWARDED_FOR', '127.0.0.1');
         }
+        $expectedSubRequest->headers->set('forwarded', array('for="127.0.0.1";host="localhost";proto=http'));
 
         $strategy = new InlineFragmentRenderer($this->getKernelExpectingRequest($expectedSubRequest));
 
@@ -196,6 +196,71 @@ class InlineFragmentRendererTest extends \PHPUnit_Framework_TestCase
         $this->testESIHeaderIsKeptInSubrequest();
 
         Request::setTrustedHeaderName(Request::HEADER_CLIENT_IP, $trustedHeaderName);
+    }
+
+    public function testHeadersPossiblyResultingIn304AreNotAssignedToSubrequest()
+    {
+        $expectedSubRequest = Request::create('/');
+        $expectedSubRequest->headers->set('x-forwarded-for', array('127.0.0.1'));
+        $expectedSubRequest->headers->set('forwarded', array('for="127.0.0.1";host="localhost";proto=http'));
+
+        $strategy = new InlineFragmentRenderer($this->getKernelExpectingRequest($expectedSubRequest));
+        $request = Request::create('/', 'GET', array(), array(), array(), array('HTTP_IF_MODIFIED_SINCE' => 'Fri, 01 Jan 2016 00:00:00 GMT', 'HTTP_IF_NONE_MATCH' => '*'));
+        $strategy->render('/', $request);
+    }
+
+    public function testFirstTrustedProxyIsSetAsRemote()
+    {
+        $expectedSubRequest = Request::create('/');
+        $expectedSubRequest->headers->set('Surrogate-Capability', 'abc="ESI/1.0"');
+        $expectedSubRequest->server->set('REMOTE_ADDR', '127.0.0.1');
+        $expectedSubRequest->headers->set('x-forwarded-for', array('127.0.0.1'));
+        $expectedSubRequest->headers->set('forwarded', array('for="127.0.0.1";host="localhost";proto=http'));
+
+        Request::setTrustedProxies(array('1.1.1.1'));
+
+        $strategy = new InlineFragmentRenderer($this->getKernelExpectingRequest($expectedSubRequest));
+
+        $request = Request::create('/');
+        $request->headers->set('Surrogate-Capability', 'abc="ESI/1.0"');
+        $strategy->render('/', $request);
+
+        Request::setTrustedProxies(array());
+    }
+
+    public function testIpAddressOfRangedTrustedProxyIsSetAsRemote()
+    {
+        $expectedSubRequest = Request::create('/');
+        $expectedSubRequest->headers->set('Surrogate-Capability', 'abc="ESI/1.0"');
+        $expectedSubRequest->server->set('REMOTE_ADDR', '127.0.0.1');
+        $expectedSubRequest->headers->set('x-forwarded-for', array('127.0.0.1'));
+        $expectedSubRequest->headers->set('forwarded', array('for="127.0.0.1";host="localhost";proto=http'));
+
+        Request::setTrustedProxies(array('1.1.1.1/24'));
+
+        $strategy = new InlineFragmentRenderer($this->getKernelExpectingRequest($expectedSubRequest));
+
+        $request = Request::create('/');
+        $request->headers->set('Surrogate-Capability', 'abc="ESI/1.0"');
+        $strategy->render('/', $request);
+
+        Request::setTrustedProxies(array());
+    }
+
+    /**
+     * Creates a Kernel expecting a request equals to $request
+     * Allows delta in comparison in case REQUEST_TIME changed by 1 second.
+     */
+    private function getKernelExpectingRequest(Request $request, $strict = false)
+    {
+        $kernel = $this->getMockBuilder('Symfony\Component\HttpKernel\HttpKernelInterface')->getMock();
+        $kernel
+            ->expects($this->once())
+            ->method('handle')
+            ->with($this->equalTo($request, 1))
+            ->willReturn(new Response('foo'));
+
+        return $kernel;
     }
 }
 

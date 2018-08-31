@@ -11,11 +11,14 @@
 
 namespace Symfony\Bridge\Twig\Tests\Extension;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\Twig\Extension\DumpExtension;
 use Symfony\Component\VarDumper\VarDumper;
 use Symfony\Component\VarDumper\Cloner\VarCloner;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
 
-class DumpExtensionTest extends \PHPUnit_Framework_TestCase
+class DumpExtensionTest extends TestCase
 {
     /**
      * @dataProvider getDumpTags
@@ -23,7 +26,7 @@ class DumpExtensionTest extends \PHPUnit_Framework_TestCase
     public function testDumpTag($template, $debug, $expectedOutput, $expectedDumped)
     {
         $extension = new DumpExtension(new VarCloner());
-        $twig = new \Twig_Environment(new \Twig_Loader_String(), array(
+        $twig = new Environment(new ArrayLoader(array('template' => $template)), array(
             'debug' => $debug,
             'cache' => false,
             'optimizations' => 0,
@@ -32,10 +35,10 @@ class DumpExtensionTest extends \PHPUnit_Framework_TestCase
 
         $dumped = null;
         $exception = null;
-        $prevDumper = VarDumper::setHandler(function ($var) use (&$dumped) {$dumped = $var;});
+        $prevDumper = VarDumper::setHandler(function ($var) use (&$dumped) { $dumped = $var; });
 
         try {
-            $this->assertEquals($expectedOutput, $twig->render($template));
+            $this->assertEquals($expectedOutput, $twig->render('template'));
         } catch (\Exception $exception) {
         }
 
@@ -63,7 +66,7 @@ class DumpExtensionTest extends \PHPUnit_Framework_TestCase
     public function testDump($context, $args, $expectedOutput, $debug = true)
     {
         $extension = new DumpExtension(new VarCloner());
-        $twig = new \Twig_Environment(new \Twig_Loader_String(), array(
+        $twig = new Environment($this->getMockBuilder('Twig\Loader\LoaderInterface')->getMock(), array(
             'debug' => $debug,
             'cache' => false,
             'optimizations' => 0,

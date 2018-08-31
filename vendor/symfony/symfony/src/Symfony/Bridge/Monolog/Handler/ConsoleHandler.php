@@ -40,14 +40,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class ConsoleHandler extends AbstractProcessingHandler implements EventSubscriberInterface
 {
-    /**
-     * @var OutputInterface|null
-     */
     private $output;
-
-    /**
-     * @var array
-     */
     private $verbosityLevelMap = array(
         OutputInterface::VERBOSITY_NORMAL => Logger::WARNING,
         OutputInterface::VERBOSITY_VERBOSE => Logger::NOTICE,
@@ -56,8 +49,6 @@ class ConsoleHandler extends AbstractProcessingHandler implements EventSubscribe
     );
 
     /**
-     * Constructor.
-     *
      * @param OutputInterface|null $output            The console output to use (the handler remains disabled when passing null
      *                                                until the output is set, e.g. by using console events)
      * @param bool                 $bubble            Whether the messages that are handled can bubble up the stack
@@ -94,8 +85,6 @@ class ConsoleHandler extends AbstractProcessingHandler implements EventSubscribe
 
     /**
      * Sets the console output to use for printing logs.
-     *
-     * @param OutputInterface $output The console output to use
      */
     public function setOutput(OutputInterface $output)
     {
@@ -115,18 +104,19 @@ class ConsoleHandler extends AbstractProcessingHandler implements EventSubscribe
     /**
      * Before a command is executed, the handler gets activated and the console output
      * is set in order to know where to write the logs.
-     *
-     * @param ConsoleCommandEvent $event
      */
     public function onCommand(ConsoleCommandEvent $event)
     {
-        $this->setOutput($event->getOutput());
+        $output = $event->getOutput();
+        if ($output instanceof ConsoleOutputInterface) {
+            $output = $output->getErrorOutput();
+        }
+
+        $this->setOutput($output);
     }
 
     /**
      * After a command has been executed, it disables the output.
-     *
-     * @param ConsoleTerminateEvent $event
      */
     public function onTerminate(ConsoleTerminateEvent $event)
     {
@@ -149,11 +139,7 @@ class ConsoleHandler extends AbstractProcessingHandler implements EventSubscribe
      */
     protected function write(array $record)
     {
-        if ($record['level'] >= Logger::ERROR && $this->output instanceof ConsoleOutputInterface) {
-            $this->output->getErrorOutput()->write((string) $record['formatted']);
-        } else {
-            $this->output->write((string) $record['formatted']);
-        }
+        $this->output->write((string) $record['formatted']);
     }
 
     /**
@@ -167,7 +153,7 @@ class ConsoleHandler extends AbstractProcessingHandler implements EventSubscribe
     /**
      * Updates the logging level based on the verbosity setting of the console output.
      *
-     * @return bool Whether the handler is enabled and verbosity is not set to quiet.
+     * @return bool Whether the handler is enabled and verbosity is not set to quiet
      */
     private function updateLevel()
     {

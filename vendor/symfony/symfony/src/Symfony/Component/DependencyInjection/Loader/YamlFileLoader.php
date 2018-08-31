@@ -19,6 +19,7 @@ use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Exception\RuntimeException;
 use Symfony\Component\Config\Resource\FileResource;
+use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Parser as YamlParser;
 use Symfony\Component\ExpressionLanguage\Expression;
 
@@ -84,7 +85,7 @@ class YamlFileLoader extends FileLoader
      * @param array  $content
      * @param string $file
      */
-    private function parseImports($content, $file)
+    private function parseImports(array $content, $file)
     {
         if (!isset($content['imports'])) {
             return;
@@ -94,12 +95,13 @@ class YamlFileLoader extends FileLoader
             throw new InvalidArgumentException(sprintf('The "imports" key should contain an array in %s. Check your YAML syntax.', $file));
         }
 
+        $defaultDirectory = dirname($file);
         foreach ($content['imports'] as $import) {
             if (!is_array($import)) {
                 throw new InvalidArgumentException(sprintf('The values in the "imports" key should be arrays in %s. Check your YAML syntax.', $file));
             }
 
-            $this->setCurrentDir(dirname($file));
+            $this->setCurrentDir($defaultDirectory);
             $this->import($import['resource'], null, isset($import['ignore_errors']) ? (bool) $import['ignore_errors'] : false, $file);
         }
     }
@@ -110,7 +112,7 @@ class YamlFileLoader extends FileLoader
      * @param array  $content
      * @param string $file
      */
-    private function parseDefinitions($content, $file)
+    private function parseDefinitions(array $content, $file)
     {
         if (!isset($content['services'])) {
             return;
@@ -128,9 +130,9 @@ class YamlFileLoader extends FileLoader
     /**
      * Parses a definition.
      *
-     * @param string $id
-     * @param array  $service
-     * @param string $file
+     * @param string       $id
+     * @param array|string $service
+     * @param string       $file
      *
      * @throws InvalidArgumentException When tags are invalid
      */
@@ -172,7 +174,7 @@ class YamlFileLoader extends FileLoader
         }
 
         if (isset($service['synchronized'])) {
-            @trigger_error(sprintf('The "synchronized" key of service "%s" in file "%s" is deprecated since version 2.7 and will be removed in 3.0.', $id, $file), E_USER_DEPRECATED);
+            @trigger_error(sprintf('The "synchronized" key of service "%s" in file "%s" is deprecated since Symfony 2.7 and will be removed in 3.0.', $id, $file), E_USER_DEPRECATED);
             $definition->setSynchronized($service['synchronized'], 'request' !== $id);
         }
 
@@ -190,7 +192,7 @@ class YamlFileLoader extends FileLoader
 
         if (isset($service['factory'])) {
             if (is_string($service['factory'])) {
-                if (strpos($service['factory'], ':') !== false && strpos($service['factory'], '::') === false) {
+                if (false !== strpos($service['factory'], ':') && false === strpos($service['factory'], '::')) {
                     $parts = explode(':', $service['factory']);
                     $definition->setFactory(array($this->resolveServices('@'.$parts[0]), $parts[1]));
                 } else {
@@ -202,17 +204,17 @@ class YamlFileLoader extends FileLoader
         }
 
         if (isset($service['factory_class'])) {
-            @trigger_error(sprintf('The "factory_class" key of service "%s" in file "%s" is deprecated since version 2.6 and will be removed in 3.0. Use "factory" instead.', $id, $file), E_USER_DEPRECATED);
+            @trigger_error(sprintf('The "factory_class" key of service "%s" in file "%s" is deprecated since Symfony 2.6 and will be removed in 3.0. Use "factory" instead.', $id, $file), E_USER_DEPRECATED);
             $definition->setFactoryClass($service['factory_class']);
         }
 
         if (isset($service['factory_method'])) {
-            @trigger_error(sprintf('The "factory_method" key of service "%s" in file "%s" is deprecated since version 2.6 and will be removed in 3.0. Use "factory" instead.', $id, $file), E_USER_DEPRECATED);
+            @trigger_error(sprintf('The "factory_method" key of service "%s" in file "%s" is deprecated since Symfony 2.6 and will be removed in 3.0. Use "factory" instead.', $id, $file), E_USER_DEPRECATED);
             $definition->setFactoryMethod($service['factory_method']);
         }
 
         if (isset($service['factory_service'])) {
-            @trigger_error(sprintf('The "factory_service" key of service "%s" in file "%s" is deprecated since version 2.6 and will be removed in 3.0. Use "factory" instead.', $id, $file), E_USER_DEPRECATED);
+            @trigger_error(sprintf('The "factory_service" key of service "%s" in file "%s" is deprecated since Symfony 2.6 and will be removed in 3.0. Use "factory" instead.', $id, $file), E_USER_DEPRECATED);
             $definition->setFactoryService($service['factory_service']);
         }
 
@@ -268,6 +270,10 @@ class YamlFileLoader extends FileLoader
                     throw new InvalidArgumentException(sprintf('A "tags" entry is missing a "name" key for service "%s" in %s.', $id, $file));
                 }
 
+                if (!is_string($tag['name']) || '' === $tag['name']) {
+                    throw new InvalidArgumentException(sprintf('The tag name for service "%s" in %s must be a non-empty string.', $id, $file));
+                }
+
                 $name = $tag['name'];
                 unset($tag['name']);
 
@@ -282,6 +288,10 @@ class YamlFileLoader extends FileLoader
         }
 
         if (isset($service['decorates'])) {
+            if ('' !== $service['decorates'] && '@' === $service['decorates'][0]) {
+                throw new InvalidArgumentException(sprintf('The value of the "decorates" option for the "%s" service must be the id of the service without the "@" prefix (replace "%s" with "%s").', $id, $service['decorates'], substr($service['decorates'], 1)));
+            }
+
             $renameId = isset($service['decoration_inner_name']) ? $service['decoration_inner_name'] : null;
             $definition->setDecoratedService($service['decorates'], $renameId);
         }
@@ -309,14 +319,20 @@ class YamlFileLoader extends FileLoader
         }
 
         if (!file_exists($file)) {
-            throw new InvalidArgumentException(sprintf('The service file "%s" is not valid.', $file));
+            throw new InvalidArgumentException(sprintf('The file "%s" does not exist.', $file));
         }
 
         if (null === $this->yamlParser) {
             $this->yamlParser = new YamlParser();
         }
 
-        return $this->validate($this->yamlParser->parse(file_get_contents($file)), $file);
+        try {
+            $configuration = $this->yamlParser->parse(file_get_contents($file));
+        } catch (ParseException $e) {
+            throw new InvalidArgumentException(sprintf('The file "%s" does not contain valid YAML.', $file), 0, $e);
+        }
+
+        return $this->validate($configuration, $file);
     }
 
     /**
@@ -370,9 +386,9 @@ class YamlFileLoader extends FileLoader
     {
         if (is_array($value)) {
             $value = array_map(array($this, 'resolveServices'), $value);
-        } elseif (is_string($value) &&  0 === strpos($value, '@=')) {
+        } elseif (is_string($value) && 0 === strpos($value, '@=')) {
             return new Expression(substr($value, 2));
-        } elseif (is_string($value) &&  0 === strpos($value, '@')) {
+        } elseif (is_string($value) && 0 === strpos($value, '@')) {
             if (0 === strpos($value, '@@')) {
                 $value = substr($value, 1);
                 $invalidBehavior = null;
@@ -401,17 +417,15 @@ class YamlFileLoader extends FileLoader
 
     /**
      * Loads from Extensions.
-     *
-     * @param array $content
      */
-    private function loadFromExtensions($content)
+    private function loadFromExtensions(array $content)
     {
         foreach ($content as $namespace => $values) {
             if (in_array($namespace, array('imports', 'parameters', 'services'))) {
                 continue;
             }
 
-            if (!is_array($values)) {
+            if (!is_array($values) && null !== $values) {
                 $values = array();
             }
 

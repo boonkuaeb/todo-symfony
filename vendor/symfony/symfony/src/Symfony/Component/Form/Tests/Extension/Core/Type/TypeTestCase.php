@@ -3,7 +3,7 @@
 /*
  * This file is part of the Symfony package.
  *
- * (c) Fabien Potencier <fabien.potencier@symfony-project.com>
+ * (c) Fabien Potencier <fabien@symfony.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -21,7 +21,7 @@ abstract class TypeTestCase extends BaseTypeTestCase
 {
     protected function setUp()
     {
-        @trigger_error('Abstract class '.__CLASS__.' is deprecated since version 2.3 and will be removed in 3.0. Use the Symfony\Component\Form\Test\TypeTestCase class instead.', E_USER_DEPRECATED);
+        @trigger_error('Abstract class '.__CLASS__.' is deprecated since Symfony 2.3 and will be removed in 3.0. Use the Symfony\Component\Form\Test\TypeTestCase class instead.', E_USER_DEPRECATED);
         parent::setUp();
     }
 }

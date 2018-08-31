@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Security\Acl\Tests\Dbal;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Acl\Domain\RoleSecurityIdentity;
 use Symfony\Component\Security\Acl\Model\FieldEntryInterface;
 use Symfony\Component\Security\Acl\Model\AuditableEntryInterface;
@@ -18,8 +19,6 @@ use Symfony\Component\Security\Acl\Model\EntryInterface;
 use Symfony\Component\Security\Acl\Domain\Entry;
 use Symfony\Component\Security\Acl\Domain\UserSecurityIdentity;
 use Symfony\Component\Security\Acl\Domain\Acl;
-use Symfony\Component\Security\Acl\Exception\AclNotFoundException;
-use Symfony\Component\Security\Acl\Exception\ConcurrentModificationException;
 use Symfony\Component\Security\Acl\Dbal\AclProvider;
 use Symfony\Component\Security\Acl\Domain\PermissionGrantingStrategy;
 use Symfony\Component\Security\Acl\Dbal\MutableAclProvider;
@@ -27,7 +26,10 @@ use Symfony\Component\Security\Acl\Dbal\Schema;
 use Doctrine\DBAL\DriverManager;
 use Symfony\Component\Security\Acl\Domain\ObjectIdentity;
 
-class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
+/**
+ * @requires extension pdo_sqlite
+ */
+class MutableAclProviderTest extends TestCase
 {
     protected $con;
 
@@ -75,23 +77,25 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($acl->getObjectIdentity()->equals($oid));
     }
 
+    /**
+     * @expectedException \Symfony\Component\Security\Acl\Exception\AclNotFoundException
+     */
     public function testDeleteAcl()
     {
         $provider = $this->getProvider();
         $oid = new ObjectIdentity(1, 'Foo');
-        $acl = $provider->createAcl($oid);
+        $provider->createAcl($oid);
 
         $provider->deleteAcl($oid);
         $loadedAcls = $this->getField($provider, 'loadedAcls');
         $this->assertCount(0, $loadedAcls['Foo']);
 
-        try {
-            $provider->findAcl($oid);
-            $this->fail('ACL has not been properly deleted.');
-        } catch (AclNotFoundException $e) {
-        }
+        $provider->findAcl($oid);
     }
 
+    /**
+     * @expectedException \Symfony\Component\Security\Acl\Exception\AclNotFoundException
+     */
     public function testDeleteAclDeletesChildren()
     {
         $provider = $this->getProvider();
@@ -101,11 +105,7 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
         $provider->updateAcl($acl);
         $provider->deleteAcl($parentAcl->getObjectIdentity());
 
-        try {
-            $provider->findAcl(new ObjectIdentity(1, 'Foo'));
-            $this->fail('Child-ACLs have not been deleted.');
-        } catch (AclNotFoundException $e) {
-        }
+        $provider->findAcl(new ObjectIdentity(1, 'Foo'));
     }
 
     public function testFindAclsAddsPropertyListener()
@@ -181,7 +181,7 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
 
         $provider->propertyChanged($acl, 'entriesInheriting', false, true);
         $changes = $propertyChanges->offsetGet($acl);
-        $this->assertTrue(isset($changes['entriesInheriting']));
+        $this->assertArrayHasKey('entriesInheriting', $changes);
         $this->assertFalse($changes['entriesInheriting'][0]);
         $this->assertTrue($changes['entriesInheriting'][1]);
 
@@ -189,7 +189,7 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
         $provider->propertyChanged($acl, 'entriesInheriting', false, true);
         $provider->propertyChanged($acl, 'entriesInheriting', true, false);
         $changes = $propertyChanges->offsetGet($acl);
-        $this->assertFalse(isset($changes['entriesInheriting']));
+        $this->assertArrayNotHasKey('entriesInheriting', $changes);
     }
 
     public function testPropertyChangedTracksChangesToAceProperties()
@@ -202,42 +202,42 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
 
         $provider->propertyChanged($ace, 'mask', 1, 3);
         $changes = $propertyChanges->offsetGet($acl);
-        $this->assertTrue(isset($changes['aces']));
+        $this->assertArrayHasKey('aces', $changes);
         $this->assertInstanceOf('\SplObjectStorage', $changes['aces']);
         $this->assertTrue($changes['aces']->contains($ace));
         $aceChanges = $changes['aces']->offsetGet($ace);
-        $this->assertTrue(isset($aceChanges['mask']));
+        $this->assertArrayHasKey('mask', $aceChanges);
         $this->assertEquals(1, $aceChanges['mask'][0]);
         $this->assertEquals(3, $aceChanges['mask'][1]);
 
         $provider->propertyChanged($ace, 'strategy', 'all', 'any');
         $changes = $propertyChanges->offsetGet($acl);
-        $this->assertTrue(isset($changes['aces']));
+        $this->assertArrayHasKey('aces', $changes);
         $this->assertInstanceOf('\SplObjectStorage', $changes['aces']);
         $this->assertTrue($changes['aces']->contains($ace));
         $aceChanges = $changes['aces']->offsetGet($ace);
-        $this->assertTrue(isset($aceChanges['mask']));
-        $this->assertTrue(isset($aceChanges['strategy']));
+        $this->assertArrayHasKey('mask', $aceChanges);
+        $this->assertArrayHasKey('strategy', $aceChanges);
         $this->assertEquals('all', $aceChanges['strategy'][0]);
         $this->assertEquals('any', $aceChanges['strategy'][1]);
 
         $provider->propertyChanged($ace, 'mask', 3, 1);
         $changes = $propertyChanges->offsetGet($acl);
         $aceChanges = $changes['aces']->offsetGet($ace);
-        $this->assertFalse(isset($aceChanges['mask']));
-        $this->assertTrue(isset($aceChanges['strategy']));
+        $this->assertArrayNotHasKey('mask', $aceChanges);
+        $this->assertArrayHasKey('strategy', $aceChanges);
 
         $provider->propertyChanged($ace2, 'mask', 1, 3);
         $provider->propertyChanged($ace, 'strategy', 'any', 'all');
         $changes = $propertyChanges->offsetGet($acl);
-        $this->assertTrue(isset($changes['aces']));
+        $this->assertArrayHasKey('aces', $changes);
         $this->assertFalse($changes['aces']->contains($ace));
         $this->assertTrue($changes['aces']->contains($ace2));
 
         $provider->propertyChanged($ace2, 'mask', 3, 4);
         $provider->propertyChanged($ace2, 'mask', 4, 1);
         $changes = $propertyChanges->offsetGet($acl);
-        $this->assertFalse(isset($changes['aces']));
+        $this->assertArrayNotHasKey('aces', $changes);
     }
 
     /**
@@ -252,7 +252,7 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
 
     public function testUpdateDoesNothingWhenThereAreNoChanges()
     {
-        $con = $this->getMock('Doctrine\DBAL\Connection', array(), array(), '', false);
+        $con = $this->getMockBuilder('Doctrine\DBAL\Connection')->disableOriginalConstructor()->getMock();
         $con
             ->expects($this->never())
             ->method('beginTransaction')
@@ -269,6 +269,9 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
         $provider->updateAcl($acl);
     }
 
+    /**
+     * @expectedException \Symfony\Component\Security\Acl\Exception\ConcurrentModificationException
+     */
     public function testUpdateAclThrowsExceptionOnConcurrentModificationOfSharedProperties()
     {
         $provider = $this->getProvider();
@@ -287,11 +290,7 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
 
         $acl1->insertClassAce($sid, 3);
         $acl2->insertClassAce($sid, 5);
-        try {
-            $provider->updateAcl($acl1);
-            $this->fail('Provider failed to detect a concurrent modification.');
-        } catch (ConcurrentModificationException $e) {
-        }
+        $provider->updateAcl($acl1);
     }
 
     public function testUpdateAcl()
@@ -320,7 +319,7 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
 
         $aces = $acl->getObjectAces();
         $reloadedAces = $reloadedAcl->getObjectAces();
-        $this->assertEquals(count($aces), count($reloadedAces));
+        $this->assertCount(count($aces), $reloadedAces);
         foreach ($aces as $index => $ace) {
             $this->assertAceEquals($ace, $reloadedAces[$index]);
         }
@@ -362,7 +361,7 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($newParentParentAcl->getId(), $reloadedAcl->getParentAcl()->getParentAcl()->getId());
     }
 
-    public function testUpdateAclInsertingMultipleObjectFieldAcesThrowsDBConstraintViolations()
+    public function testUpdateAclInsertingMultipleObjectFieldAcesDoesNotThrowDBConstraintViolations()
     {
         $provider = $this->getProvider();
         $oid = new ObjectIdentity(1, 'Foo');
@@ -382,9 +381,11 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
         $acl = $provider->findAcl($oid);
         $acl->insertObjectFieldAce($fieldName, $sid3, 4);
         $provider->updateAcl($acl);
+
+        $this->assertCount(3, $provider->findAcl($oid)->getObjectFieldAces($fieldName));
     }
 
-    public function testUpdateAclDeletingObjectFieldAcesThrowsDBConstraintViolations()
+    public function testUpdateAclDeletingObjectFieldAcesDoesNotThrowDBConstraintViolations()
     {
         $provider = $this->getProvider();
         $oid = new ObjectIdentity(1, 'Foo');
@@ -408,6 +409,8 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
         $acl = $provider->findAcl($oid);
         $acl->insertObjectFieldAce($fieldName, $sid3, 4);
         $provider->updateAcl($acl);
+
+        $this->assertCount(2, $provider->findAcl($oid)->getObjectFieldAces($fieldName));
     }
 
     public function testUpdateUserSecurityIdentity()
@@ -434,7 +437,7 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
 
         $aces = $acl->getObjectAces();
         $reloadedAces = $reloadedAcl->getObjectAces();
-        $this->assertEquals(count($aces), count($reloadedAces));
+        $this->assertCount(count($aces), $reloadedAces);
         foreach ($reloadedAces as $ace) {
             $this->assertTrue($ace->getSecurityIdentity()->equals($newSid));
         }
@@ -451,9 +454,6 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
      *         'parent_acl' => *name (optional)*
      *     ),
      * )
-     *
-     * @param AclProvider $provider
-     * @param array       $data
      *
      * @throws \InvalidArgumentException
      * @throws \Exception
@@ -513,10 +513,6 @@ class MutableAclProviderTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        if (!class_exists('PDO') || !in_array('sqlite', \PDO::getAvailableDrivers())) {
-            self::markTestSkipped('This test requires SQLite support in your environment');
-        }
-
         $this->con = DriverManager::getConnection(array(
             'driver' => 'pdo_sqlite',
             'memory' => true,

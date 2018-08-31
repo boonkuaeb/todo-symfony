@@ -11,7 +11,9 @@
 
 namespace Symfony\Component\Security\Acl\Tests\Domain;
 
-class AuditLoggerTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class AuditLoggerTest extends TestCase
 {
     /**
      * @dataProvider getTestLogData
@@ -29,8 +31,8 @@ class AuditLoggerTest extends \PHPUnit_Framework_TestCase
             ;
 
             $ace
-               ->expects($this->never())
-               ->method('isAuditFailure')
+                ->expects($this->never())
+                ->method('isAuditFailure')
             ;
         } else {
             $ace
@@ -47,9 +49,9 @@ class AuditLoggerTest extends \PHPUnit_Framework_TestCase
 
         if (true === $audit) {
             $logger
-               ->expects($this->once())
-               ->method('doLog')
-               ->with($this->equalTo($granting), $this->equalTo($ace))
+                ->expects($this->once())
+                ->method('doLog')
+                ->with($this->equalTo($granting), $this->equalTo($ace))
             ;
         } else {
             $logger
@@ -73,7 +75,7 @@ class AuditLoggerTest extends \PHPUnit_Framework_TestCase
 
     protected function getEntry()
     {
-        return $this->getMock('Symfony\Component\Security\Acl\Model\AuditableEntryInterface');
+        return $this->getMockBuilder('Symfony\Component\Security\Acl\Model\AuditableEntryInterface')->getMock();
     }
 
     protected function getLogger()

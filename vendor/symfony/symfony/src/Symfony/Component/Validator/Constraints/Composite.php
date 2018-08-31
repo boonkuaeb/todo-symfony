@@ -24,7 +24,6 @@ use Symfony\Component\Validator\Exception\ConstraintDefinitionException;
  * let {@link getCompositeOption()} return the name of the property which
  * contains the nested constraints.
  *
- * @since  2.6
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
 abstract class Composite extends Constraint
@@ -58,7 +57,7 @@ abstract class Composite extends Constraint
 
         $this->initializeNestedConstraints();
 
-        /** @var Constraint[] $nestedConstraints */
+        /* @var Constraint[] $nestedConstraints */
         $compositeOption = $this->getCompositeOption();
         $nestedConstraints = $this->$compositeOption;
 
@@ -68,6 +67,10 @@ abstract class Composite extends Constraint
 
         foreach ($nestedConstraints as $constraint) {
             if (!$constraint instanceof Constraint) {
+                if (is_object($constraint)) {
+                    $constraint = get_class($constraint);
+                }
+
                 throw new ConstraintDefinitionException(sprintf('The value %s is not an instance of Constraint in constraint %s', $constraint, get_class($this)));
             }
 

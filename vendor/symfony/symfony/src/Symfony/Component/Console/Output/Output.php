@@ -26,8 +26,6 @@ use Symfony\Component\Console\Formatter\OutputFormatter;
  *  * quiet: -q (no output)
  *
  * @author Fabien Potencier <fabien@symfony.com>
- *
- * @api
  */
 abstract class Output implements OutputInterface
 {
@@ -35,13 +33,9 @@ abstract class Output implements OutputInterface
     private $formatter;
 
     /**
-     * Constructor.
-     *
      * @param int                           $verbosity The verbosity level (one of the VERBOSITY constants in OutputInterface)
      * @param bool                          $decorated Whether to decorate messages
      * @param OutputFormatterInterface|null $formatter Output formatter instance (null to use default OutputFormatter)
-     *
-     * @api
      */
     public function __construct($verbosity = self::VERBOSITY_NORMAL, $decorated = false, OutputFormatterInterface $formatter = null)
     {
@@ -98,21 +92,33 @@ abstract class Output implements OutputInterface
         return $this->verbosity;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function isQuiet()
     {
         return self::VERBOSITY_QUIET === $this->verbosity;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function isVerbose()
     {
         return self::VERBOSITY_VERBOSE <= $this->verbosity;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function isVeryVerbose()
     {
         return self::VERBOSITY_VERY_VERBOSE <= $this->verbosity;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function isDebug()
     {
         return self::VERBOSITY_DEBUG <= $this->verbosity;

@@ -15,6 +15,7 @@ use Symfony\Component\Intl\Data\Bundle\Reader\JsonBundleReader;
 use Symfony\Component\Intl\Data\Bundle\Reader\BufferedBundleReader;
 use Symfony\Component\Intl\Data\Bundle\Reader\BundleEntryReader;
 use Symfony\Component\Intl\Data\Bundle\Reader\BundleEntryReaderInterface;
+use Symfony\Component\Intl\Data\Provider\LocaleDataProvider;
 use Symfony\Component\Intl\Data\Provider\ScriptDataProvider;
 use Symfony\Component\Intl\ResourceBundle\CurrencyBundle;
 use Symfony\Component\Intl\ResourceBundle\CurrencyBundleInterface;
@@ -101,7 +102,7 @@ final class Intl
     /**
      * Returns whether the intl extension is installed.
      *
-     * @return bool Returns true if the intl extension is installed, false otherwise.
+     * @return bool Returns true if the intl extension is installed, false otherwise
      */
     public static function isExtensionLoaded()
     {
@@ -111,7 +112,7 @@ final class Intl
     /**
      * Returns the bundle containing currency information.
      *
-     * @return CurrencyBundleInterface The currency resource bundle.
+     * @return CurrencyBundleInterface The currency resource bundle
      */
     public static function getCurrencyBundle()
     {
@@ -129,7 +130,7 @@ final class Intl
     /**
      * Returns the bundle containing language information.
      *
-     * @return LanguageBundleInterface The language resource bundle.
+     * @return LanguageBundleInterface The language resource bundle
      */
     public static function getLanguageBundle()
     {
@@ -151,7 +152,7 @@ final class Intl
     /**
      * Returns the bundle containing locale information.
      *
-     * @return LocaleBundleInterface The locale resource bundle.
+     * @return LocaleBundleInterface The locale resource bundle
      */
     public static function getLocaleBundle()
     {
@@ -168,7 +169,7 @@ final class Intl
     /**
      * Returns the bundle containing region information.
      *
-     * @return RegionBundleInterface The region resource bundle.
+     * @return RegionBundleInterface The region resource bundle
      */
     public static function getRegionBundle()
     {
@@ -186,7 +187,7 @@ final class Intl
     /**
      * Returns the version of the installed ICU library.
      *
-     * @return null|string The ICU version or NULL if it could not be determined.
+     * @return null|string The ICU version or NULL if it could not be determined
      */
     public static function getIcuVersion()
     {
@@ -216,7 +217,7 @@ final class Intl
     /**
      * Returns the version of the installed ICU data.
      *
-     * @return string The version of the installed ICU data.
+     * @return string The version of the installed ICU data
      */
     public static function getIcuDataVersion()
     {
@@ -230,11 +231,11 @@ final class Intl
     /**
      * Returns the ICU version that the stub classes mimic.
      *
-     * @return string The ICU version of the stub classes.
+     * @return string The ICU version of the stub classes
      */
     public static function getIcuStubVersion()
     {
-        return '51.2';
+        return '61.1';
     }
 
     /**
@@ -244,7 +245,7 @@ final class Intl
      */
     public static function getDataDirectory()
     {
-        return realpath(__DIR__.'/Resources/data');
+        return __DIR__.'/Resources/data';
     }
 
     /**
@@ -259,6 +260,11 @@ final class Intl
                 new JsonBundleReader(),
                 self::BUFFER_SIZE
             ));
+            $localeDataProvider = new LocaleDataProvider(
+                self::getDataDirectory().'/'.self::LOCALE_DIR,
+                self::$entryReader
+            );
+            self::$entryReader->setLocaleAliases($localeDataProvider->getAliases());
         }
 
         return self::$entryReader;

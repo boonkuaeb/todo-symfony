@@ -24,14 +24,8 @@ use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
  */
 class AnnotationLoader implements LoaderInterface
 {
-    /**
-     * @var Reader
-     */
     private $reader;
 
-    /**
-     * @param Reader $reader
-     */
     public function __construct(Reader $reader)
     {
         $this->reader = $reader;
@@ -49,7 +43,7 @@ class AnnotationLoader implements LoaderInterface
         $attributesMetadata = $classMetadata->getAttributesMetadata();
 
         foreach ($reflectionClass->getProperties() as $property) {
-            if (!isset($attributeMetadata[$property->name])) {
+            if (!isset($attributesMetadata[$property->name])) {
                 $attributesMetadata[$property->name] = new AttributeMetadata($property->name);
                 $classMetadata->addAttributeMetadata($attributesMetadata[$property->name]);
             }

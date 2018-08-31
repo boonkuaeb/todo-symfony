@@ -17,13 +17,20 @@
     ],
     "require": {
         "php": ">=5.3.9",
-        "symfony/filesystem": "~2.3"
+        "symfony/filesystem": "~2.3",
+        "symfony/polyfill-ctype": "~1.8"
     },
     "require-dev": {
-        "symfony/phpunit-bridge": "~2.7"
+        "symfony/yaml": "~2.7"
+    },
+    "suggest": {
+        "symfony/yaml": "To use the yaml reference dumper"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Component\\Config\\": "" }
+        "psr-4": { "Symfony\\Component\\Config\\": "" },
+        "exclude-from-classmap": [
+            "/Tests/"
+        ]
     },
     "minimum-stability": "dev",
     "extra": {

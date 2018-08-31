@@ -11,17 +11,19 @@
 
 namespace Symfony\Component\Validator\Tests\Mapping\Cache;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Mapping\Cache\ApcCache;
 
 /**
  * @group legacy
+ * @requires extension apc
  */
-class LegacyApcCacheTest extends \PHPUnit_Framework_TestCase
+class LegacyApcCacheTest extends TestCase
 {
     protected function setUp()
     {
-        if (!extension_loaded('apc') || !ini_get('apc.enable_cli')) {
-            $this->markTestSkipped('APC is not loaded.');
+        if (!ini_get('apc.enabled') || !ini_get('apc.enable_cli')) {
+            $this->markTestSkipped('APC is not enabled.');
         }
     }
 

@@ -12,11 +12,7 @@
 namespace Symfony\Component\BrowserKit;
 
 /**
- * Response object.
- *
  * @author Fabien Potencier <fabien@symfony.com>
- *
- * @api
  */
 class Response
 {
@@ -25,16 +21,12 @@ class Response
     protected $headers;
 
     /**
-     * Constructor.
-     *
      * The headers array is a set of key/value pairs. If a header is present multiple times
      * then the value is an array of all the values.
      *
      * @param string $content The content of the response
      * @param int    $status  The response status code
      * @param array  $headers An array of headers
-     *
-     * @api
      */
     public function __construct($content = '', $status = 200, array $headers = array())
     {
@@ -81,8 +73,6 @@ class Response
      * Gets the response content.
      *
      * @return string The response content
-     *
-     * @api
      */
     public function getContent()
     {
@@ -93,8 +83,6 @@ class Response
      * Gets the response status code.
      *
      * @return int The response status code
-     *
-     * @api
      */
     public function getStatus()
     {
@@ -105,8 +93,6 @@ class Response
      * Gets the response headers.
      *
      * @return array The response headers
-     *
-     * @api
      */
     public function getHeaders()
     {

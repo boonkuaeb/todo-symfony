@@ -21,12 +21,10 @@ use Doctrine\DBAL\Connection;
  */
 final class Schema extends BaseSchema
 {
-    protected $options;
+    private $options;
 
     /**
-     * Constructor.
-     *
-     * @param array      $options    the names for tables
+     * @param array      $options    The names for tables
      * @param Connection $connection
      */
     public function __construct(array $options, Connection $connection = null)
@@ -46,8 +44,6 @@ final class Schema extends BaseSchema
 
     /**
      * Merges ACL schema with the given schema.
-     *
-     * @param BaseSchema $schema
      */
     public function addToSchema(BaseSchema $schema)
     {

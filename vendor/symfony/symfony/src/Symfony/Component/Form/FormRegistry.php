@@ -30,7 +30,7 @@ class FormRegistry implements FormRegistryInterface
     private $extensions = array();
 
     /**
-     * @var FormTypeInterface[]
+     * @var ResolvedFormTypeInterface[]
      */
     private $types = array();
 
@@ -45,10 +45,8 @@ class FormRegistry implements FormRegistryInterface
     private $resolvedTypeFactory;
 
     /**
-     * Constructor.
-     *
      * @param FormExtensionInterface[]         $extensions          An array of FormExtensionInterface
-     * @param ResolvedFormTypeFactoryInterface $resolvedTypeFactory The factory for resolved form types.
+     * @param ResolvedFormTypeFactoryInterface $resolvedTypeFactory The factory for resolved form types
      *
      * @throws UnexpectedTypeException if any extension does not implement FormExtensionInterface
      */
@@ -69,10 +67,6 @@ class FormRegistry implements FormRegistryInterface
      */
     public function getType($name)
     {
-        if (!is_string($name)) {
-            throw new UnexpectedTypeException($name, 'string');
-        }
-
         if (!isset($this->types[$name])) {
             $type = null;
 
@@ -97,9 +91,9 @@ class FormRegistry implements FormRegistryInterface
      * Wraps a type into a ResolvedFormTypeInterface implementation and connects
      * it with its parent type.
      *
-     * @param FormTypeInterface $type The type to resolve.
+     * @param FormTypeInterface $type The type to resolve
      *
-     * @return ResolvedFormTypeInterface The resolved type.
+     * @return ResolvedFormTypeInterface The resolved type
      */
     private function resolveAndAddType(FormTypeInterface $type)
     {

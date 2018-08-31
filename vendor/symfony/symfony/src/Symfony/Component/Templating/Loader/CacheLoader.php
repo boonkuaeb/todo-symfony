@@ -30,8 +30,6 @@ class CacheLoader extends Loader
     protected $dir;
 
     /**
-     * Constructor.
-     *
      * @param LoaderInterface $loader A Loader instance
      * @param string          $dir    The directory where to store the cache files
      */
@@ -43,8 +41,6 @@ class CacheLoader extends Loader
 
     /**
      * Loads a template.
-     *
-     * @param TemplateReferenceInterface $template A template
      *
      * @return Storage|bool false if the template cannot be loaded, a Storage instance otherwise
      */
@@ -72,8 +68,8 @@ class CacheLoader extends Loader
 
         $content = $storage->getContent();
 
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+        if (!is_dir($dir) && !@mkdir($dir, 0777, true) && !is_dir($dir)) {
+            throw new \RuntimeException(sprintf('Cache Loader was not able to create directory "%s"', $dir));
         }
 
         file_put_contents($path, $content);

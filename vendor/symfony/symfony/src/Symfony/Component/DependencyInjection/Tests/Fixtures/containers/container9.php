@@ -10,7 +10,7 @@ use Symfony\Component\ExpressionLanguage\Expression;
 
 $container = new ContainerBuilder();
 $container
-    ->register('foo', 'Bar\FooClass')
+    ->register('foo', '\Bar\FooClass')
     ->addTag('foo', array('foo' => 'foo'))
     ->addTag('foo', array('bar' => 'bar', 'baz' => 'baz'))
     ->setFactory(array('Bar\\FooClass', 'getInstance'))
@@ -50,7 +50,7 @@ $container
     ->addMethodCall('setBar', array(new Reference('foo2', ContainerInterface::NULL_ON_INVALID_REFERENCE)))
     ->addMethodCall('setBar', array(new Reference('foo3', ContainerInterface::IGNORE_ON_INVALID_REFERENCE)))
     ->addMethodCall('setBar', array(new Reference('foobaz', ContainerInterface::IGNORE_ON_INVALID_REFERENCE)))
-    ->addMethodCall('setBar', array(new Expression('service("foo").foo() ~ (container.hasparameter("foo") ? parameter("foo") : "default")')))
+    ->addMethodCall('setBar', array(new Expression('service("foo").foo() ~ (container.hasParameter("foo") ? parameter("foo") : "default")')))
 ;
 $container
     ->register('foo_with_inline', 'Foo')

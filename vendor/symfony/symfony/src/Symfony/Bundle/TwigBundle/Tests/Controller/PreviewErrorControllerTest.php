@@ -24,17 +24,16 @@ class PreviewErrorControllerTest extends TestCase
         $self = $this;
 
         $request = Request::create('whatever');
-        $response = new Response("");
+        $response = new Response('');
         $code = 123;
         $logicalControllerName = 'foo:bar:baz';
 
-        $kernel = $this->getMock('\Symfony\Component\HttpKernel\HttpKernelInterface');
+        $kernel = $this->getMockBuilder('\Symfony\Component\HttpKernel\HttpKernelInterface')->getMock();
         $kernel
             ->expects($this->once())
             ->method('handle')
             ->with(
                 $this->callback(function (Request $request) use ($self, $logicalControllerName, $code) {
-
                     $self->assertEquals($logicalControllerName, $request->attributes->get('_controller'));
 
                     $exception = $request->attributes->get('exception');

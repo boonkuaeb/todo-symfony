@@ -26,11 +26,11 @@ class YamlFileLoader extends FileLoader
     private $yamlParser;
 
     /**
-     * An array of YAML class descriptions
+     * An array of YAML class descriptions.
      *
      * @var array
      */
-    private $classes = null;
+    private $classes;
 
     /**
      * {@inheritdoc}
@@ -53,37 +53,46 @@ class YamlFileLoader extends FileLoader
             }
 
             // not an array
-            if (!is_array($classes)) {
+            if (!\is_array($classes)) {
                 throw new MappingException(sprintf('The file "%s" must contain a YAML array.', $this->file));
             }
 
             $this->classes = $classes;
         }
 
-        if (isset($this->classes[$classMetadata->getName()])) {
-            $yaml = $this->classes[$classMetadata->getName()];
+        if (!isset($this->classes[$classMetadata->getName()])) {
+            return false;
+        }
 
-            if (isset($yaml['attributes']) && is_array($yaml['attributes'])) {
-                $attributesMetadata = $classMetadata->getAttributesMetadata();
-                foreach ($yaml['attributes'] as $attribute => $data) {
-                    if (isset($attributesMetadata[$attribute])) {
-                        $attributeMetadata = $attributesMetadata[$attribute];
-                    } else {
-                        $attributeMetadata = new AttributeMetadata($attribute);
-                        $classMetadata->addAttributeMetadata($attributeMetadata);
+        $yaml = $this->classes[$classMetadata->getName()];
+
+        if (isset($yaml['attributes']) && \is_array($yaml['attributes'])) {
+            $attributesMetadata = $classMetadata->getAttributesMetadata();
+
+            foreach ($yaml['attributes'] as $attribute => $data) {
+                if (isset($attributesMetadata[$attribute])) {
+                    $attributeMetadata = $attributesMetadata[$attribute];
+                } else {
+                    $attributeMetadata = new AttributeMetadata($attribute);
+                    $classMetadata->addAttributeMetadata($attributeMetadata);
+                }
+
+                if (isset($data['groups'])) {
+                    if (!\is_array($data['groups'])) {
+                        throw new MappingException(sprintf('The "groups" key must be an array of strings in "%s" for the attribute "%s" of the class "%s".', $this->file, $attribute, $classMetadata->getName()));
                     }
 
-                    if (isset($data['groups'])) {
-                        foreach ($data['groups'] as $group) {
-                            $attributeMetadata->addGroup($group);
+                    foreach ($data['groups'] as $group) {
+                        if (!\is_string($group)) {
+                            throw new MappingException(sprintf('Group names must be strings in "%s" for the attribute "%s" of the class "%s".', $this->file, $attribute, $classMetadata->getName()));
                         }
+
+                        $attributeMetadata->addGroup($group);
                     }
                 }
             }
-
-            return true;
         }
 
-        return false;
+        return true;
     }
 }

@@ -17,22 +17,15 @@ use Symfony\Component\Routing\Route;
  * Container for a Route.
  *
  * @author Arnaud Le Blanc <arnaud.lb@gmail.com>
+ *
+ * @internal
  */
 class DumperRoute
 {
-    /**
-     * @var string
-     */
     private $name;
-
-    /**
-     * @var Route
-     */
     private $route;
 
     /**
-     * Constructor.
-     *
      * @param string $name  The route name
      * @param Route  $route The route
      */

@@ -65,6 +65,7 @@ class AsseticExtension extends Extension
         $container->setParameter('assetic.node.paths', $config['node_paths']);
         $container->setParameter('assetic.ruby.bin', $config['ruby']);
         $container->setParameter('assetic.sass.bin', $config['sass']);
+        $container->setParameter('assetic.reactjsx.bin', $config['reactjsx']);
 
         // register formulae
         $formulae = array();
@@ -129,16 +130,6 @@ class AsseticExtension extends Extension
         }
 
         $container->setParameter('assetic.bundles', $config['bundles']);
-
-        $this->addClassesToCompile(array(
-            'Symfony\\Bundle\\AsseticBundle\\DefaultValueSupplier',
-            'Symfony\\Bundle\\AsseticBundle\\Factory\\AssetFactory',
-            /* This will introduce hard dependency on Twig
-            'Assetic\\Extension\\Twig\\AsseticExtension',
-            'Assetic\\Extension\\Twig\\ValueContainer',
-            'Symfony\\Bundle\\AsseticBundle\\Twig\\AsseticExtension',
-            */
-        ));
 
         if ($config['workers']['cache_busting']['enabled']) {
             $container->getDefinition('assetic.worker.cache_busting')->addTag('assetic.factory_worker');

@@ -11,9 +11,10 @@
 
 namespace Symfony\Component\Security\Acl\Tests\Permission;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Acl\Permission\MaskBuilder;
 
-class MaskBuilderTest extends \PHPUnit_Framework_TestCase
+class MaskBuilderTest extends TestCase
 {
     /**
      * @expectedException \InvalidArgumentException
@@ -95,7 +96,7 @@ class MaskBuilderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(0, $builder->get());
 
         $builder->add('view');
-        $this->assertTrue($builder->get() > 0);
+        $this->assertGreaterThan(0, $builder->get());
 
         $builder->reset();
         $this->assertEquals(0, $builder->get());

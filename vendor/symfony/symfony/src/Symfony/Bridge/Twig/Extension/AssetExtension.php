@@ -13,13 +13,15 @@ namespace Symfony\Bridge\Twig\Extension;
 
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\Asset\VersionStrategy\StaticVersionStrategy;
+use Twig\Extension\AbstractExtension;
+use Twig\TwigFunction;
 
 /**
  * Twig extension for the Symfony Asset component.
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-class AssetExtension extends \Twig_Extension
+class AssetExtension extends AbstractExtension
 {
     private $packages;
     private $foundationExtension;
@@ -40,9 +42,9 @@ class AssetExtension extends \Twig_Extension
     public function getFunctions()
     {
         return array(
-            new \Twig_SimpleFunction('asset', array($this, 'getAssetUrl')),
-            new \Twig_SimpleFunction('asset_version', array($this, 'getAssetVersion')),
-            new \Twig_SimpleFunction('assets_version', array($this, 'getAssetsVersion')),
+            new TwigFunction('asset', array($this, 'getAssetUrl')),
+            new TwigFunction('asset_version', array($this, 'getAssetVersion')),
+            new TwigFunction('assets_version', array($this, 'getAssetsVersion'), array('deprecated' => true, 'alternative' => 'asset_version')),
         );
     }
 
@@ -98,19 +100,16 @@ class AssetExtension extends \Twig_Extension
     {
         if ($version) {
             $package = $this->packages->getPackage($packageName);
-            $class = new \ReflectionClass($package);
 
-            while ('Symfony\Component\Asset\Package' !== $class->getName()) {
-                $class = $class->getParentClass();
-            }
-
-            $v = $class->getProperty('versionStrategy');
+            $v = new \ReflectionProperty('Symfony\Component\Asset\Package', 'versionStrategy');
             $v->setAccessible(true);
+
             $currentVersionStrategy = $v->getValue($package);
 
             if (property_exists($currentVersionStrategy, 'format')) {
                 $f = new \ReflectionProperty($currentVersionStrategy, 'format');
                 $f->setAccessible(true);
+
                 $format = $f->getValue($currentVersionStrategy);
 
                 $v->setValue($package, new StaticVersionStrategy($version, $format));

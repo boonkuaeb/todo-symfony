@@ -12,19 +12,14 @@
 namespace Symfony\Component\Security\Acl\Permission;
 
 /**
- * This abstract class implements nearly all the MaskBuilderInterface methods
+ * This abstract class implements nearly all the MaskBuilderInterface methods.
  */
 abstract class AbstractMaskBuilder implements MaskBuilderInterface
 {
-    /**
-     * @var int
-     */
     protected $mask;
 
     /**
-     * Constructor.
-     *
-     * @param int $mask optional; defaults to 0
+     * @param int $mask
      */
     public function __construct($mask = 0)
     {

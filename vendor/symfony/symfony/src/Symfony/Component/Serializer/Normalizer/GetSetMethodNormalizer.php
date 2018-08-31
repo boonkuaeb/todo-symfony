@@ -58,17 +58,17 @@ class GetSetMethodNormalizer extends AbstractNormalizer
         foreach ($reflectionMethods as $method) {
             if ($this->isGetMethod($method)) {
                 $attributeName = lcfirst(substr($method->name, 0 === strpos($method->name, 'is') ? 2 : 3));
-                if (in_array($attributeName, $this->ignoredAttributes)) {
+                if (\in_array($attributeName, $this->ignoredAttributes)) {
                     continue;
                 }
 
-                if (false !== $allowedAttributes && !in_array($attributeName, $allowedAttributes)) {
+                if (false !== $allowedAttributes && !\in_array($attributeName, $allowedAttributes)) {
                     continue;
                 }
 
                 $attributeValue = $method->invoke($object);
                 if (isset($this->callbacks[$attributeName])) {
-                    $attributeValue = call_user_func($this->callbacks[$attributeName], $attributeValue);
+                    $attributeValue = \call_user_func($this->callbacks[$attributeName], $attributeValue);
                 }
                 if (null !== $attributeValue && !is_scalar($attributeValue)) {
                     if (!$this->serializer instanceof NormalizerInterface) {
@@ -108,13 +108,13 @@ class GetSetMethodNormalizer extends AbstractNormalizer
                 $attribute = $this->nameConverter->denormalize($attribute);
             }
 
-            $allowed = $allowedAttributes === false || in_array($attribute, $allowedAttributes);
-            $ignored = in_array($attribute, $this->ignoredAttributes);
+            $allowed = false === $allowedAttributes || \in_array($attribute, $allowedAttributes);
+            $ignored = \in_array($attribute, $this->ignoredAttributes);
 
             if ($allowed && !$ignored) {
                 $setter = 'set'.ucfirst($attribute);
 
-                if (in_array($setter, $classMethods)) {
+                if (\in_array($setter, $classMethods) && !$reflectionClass->getMethod($setter)->isStatic()) {
                     $object->$setter($value);
                 }
             }
@@ -128,7 +128,7 @@ class GetSetMethodNormalizer extends AbstractNormalizer
      */
     public function supportsNormalization($data, $format = null)
     {
-        return is_object($data) && !$data instanceof \Traversable && $this->supports(get_class($data));
+        return \is_object($data) && !$data instanceof \Traversable && $this->supports(\get_class($data));
     }
 
     /**
@@ -162,18 +162,19 @@ class GetSetMethodNormalizer extends AbstractNormalizer
     /**
      * Checks if a method's name is get.* or is.*, and can be called without parameters.
      *
-     * @param \ReflectionMethod $method the method to check
-     *
-     * @return bool whether the method is a getter or boolean getter.
+     * @return bool whether the method is a getter or boolean getter
      */
     private function isGetMethod(\ReflectionMethod $method)
     {
-        $methodLength = strlen($method->name);
+        $methodLength = \strlen($method->name);
 
-        return (
-            ((0 === strpos($method->name, 'get') && 3 < $methodLength) ||
-            (0 === strpos($method->name, 'is') && 2 < $methodLength)) &&
-            0 === $method->getNumberOfRequiredParameters()
-        );
+        return
+            !$method->isStatic() &&
+            (
+                ((0 === strpos($method->name, 'get') && 3 < $methodLength) ||
+                (0 === strpos($method->name, 'is') && 2 < $methodLength)) &&
+                0 === $method->getNumberOfRequiredParameters()
+            )
+        ;
     }
 }

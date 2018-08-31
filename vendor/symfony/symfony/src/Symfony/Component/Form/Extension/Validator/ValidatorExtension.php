@@ -50,7 +50,7 @@ class ValidatorExtension extends AbstractExtension
         // the DIC, where the XML file is loaded automatically. Thus the following
         // code must be kept synchronized with validation.xml
 
-        /** @var $metadata ClassMetadata */
+        /* @var $metadata ClassMetadata */
         $metadata->addConstraint(new Form());
         $metadata->addPropertyConstraint('children', new Valid());
 
@@ -59,7 +59,7 @@ class ValidatorExtension extends AbstractExtension
 
     public function loadTypeGuesser()
     {
-        // 2.5 API
+        // 2.5 API
         if ($this->validator instanceof ValidatorInterface) {
             return new ValidatorTypeGuesser($this->validator);
         }

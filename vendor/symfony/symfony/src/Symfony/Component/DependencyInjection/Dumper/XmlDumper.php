@@ -24,8 +24,6 @@ use Symfony\Component\ExpressionLanguage\Expression;
  *
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Martin Hasoň <martin.hason@gmail.com>
- *
- * @api
  */
 class XmlDumper extends Dumper
 {
@@ -37,11 +35,7 @@ class XmlDumper extends Dumper
     /**
      * Dumps the service container as an XML string.
      *
-     * @param array $options An array of options
-     *
      * @return string An xml string representing of the service container
-     *
-     * @api
      */
     public function dump(array $options = array())
     {
@@ -62,11 +56,6 @@ class XmlDumper extends Dumper
         return $xml;
     }
 
-    /**
-     * Adds parameters.
-     *
-     * @param \DOMElement $parent
-     */
     private function addParameters(\DOMElement $parent)
     {
         $data = $this->container->getParameterBag()->all();
@@ -83,12 +72,6 @@ class XmlDumper extends Dumper
         $this->convertParameters($data, 'parameter', $parameters);
     }
 
-    /**
-     * Adds method calls.
-     *
-     * @param array       $methodcalls
-     * @param \DOMElement $parent
-     */
     private function addMethodCalls(array $methodcalls, \DOMElement $parent)
     {
         foreach ($methodcalls as $methodcall) {
@@ -114,8 +97,12 @@ class XmlDumper extends Dumper
         if (null !== $id) {
             $service->setAttribute('id', $id);
         }
-        if ($definition->getClass()) {
-            $service->setAttribute('class', $definition->getClass());
+        if ($class = $definition->getClass()) {
+            if ('\\' === substr($class, 0, 1)) {
+                $class = substr($class, 1);
+            }
+
+            $service->setAttribute('class', $class);
         }
         if ($definition->getFactoryMethod(false)) {
             $service->setAttribute('factory-method', $definition->getFactoryMethod(false));
@@ -191,6 +178,10 @@ class XmlDumper extends Dumper
             $service->appendChild($factory);
         }
 
+        if ($definition->isAbstract()) {
+            $service->setAttribute('abstract', 'true');
+        }
+
         if ($callable = $definition->getConfigurator()) {
             $configurator = $this->document->createElement('configurator');
 
@@ -227,11 +218,6 @@ class XmlDumper extends Dumper
         $parent->appendChild($service);
     }
 
-    /**
-     * Adds services.
-     *
-     * @param \DOMElement $parent
-     */
     private function addServices(\DOMElement $parent)
     {
         $definitions = $this->container->getDefinitions();
@@ -262,7 +248,7 @@ class XmlDumper extends Dumper
      * @param \DOMElement $parent
      * @param string      $keyAttribute
      */
-    private function convertParameters($parameters, $type, \DOMElement $parent, $keyAttribute = 'key')
+    private function convertParameters(array $parameters, $type, \DOMElement $parent, $keyAttribute = 'key')
     {
         $withKeys = array_keys($parameters) !== range(0, count($parameters) - 1);
         foreach ($parameters as $key => $value) {
@@ -278,9 +264,9 @@ class XmlDumper extends Dumper
                 $element->setAttribute('type', 'service');
                 $element->setAttribute('id', (string) $value);
                 $behaviour = $value->getInvalidBehavior();
-                if ($behaviour == ContainerInterface::NULL_ON_INVALID_REFERENCE) {
+                if (ContainerInterface::NULL_ON_INVALID_REFERENCE == $behaviour) {
                     $element->setAttribute('on-invalid', 'null');
-                } elseif ($behaviour == ContainerInterface::IGNORE_ON_INVALID_REFERENCE) {
+                } elseif (ContainerInterface::IGNORE_ON_INVALID_REFERENCE == $behaviour) {
                     $element->setAttribute('on-invalid', 'ignore');
                 }
                 if (!$value->isStrict()) {
@@ -307,11 +293,9 @@ class XmlDumper extends Dumper
     /**
      * Escapes arguments.
      *
-     * @param array $arguments
-     *
      * @return array
      */
-    private function escape($arguments)
+    private function escape(array $arguments)
     {
         $args = array();
         foreach ($arguments as $k => $v) {

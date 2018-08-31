@@ -14,7 +14,7 @@ namespace Symfony\Bridge\Doctrine\Form\ChoiceList;
 use Symfony\Component\Form\Exception\UnexpectedTypeException;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\DBAL\Connection;
-use Doctrine\ORM\EntityManager;
+use Doctrine\Common\Persistence\ObjectManager;
 
 /**
  * Loads entities using a {@link QueryBuilder} instance.
@@ -43,8 +43,8 @@ class ORMQueryBuilderLoader implements EntityLoaderInterface
      *                                            deprecated and will not be
      *                                            supported anymore as of
      *                                            Symfony 3.0.
-     * @param EntityManager         $manager      Deprecated.
-     * @param string                $class        Deprecated.
+     * @param ObjectManager         $manager      Deprecated
+     * @param string                $class        Deprecated
      *
      * @throws UnexpectedTypeException
      */
@@ -57,14 +57,14 @@ class ORMQueryBuilderLoader implements EntityLoaderInterface
         }
 
         if ($queryBuilder instanceof \Closure) {
-            @trigger_error('Passing a QueryBuilder closure to '.__CLASS__.'::__construct() is deprecated since version 2.7 and will be removed in 3.0.', E_USER_DEPRECATED);
+            @trigger_error('Passing a QueryBuilder closure to '.__CLASS__.'::__construct() is deprecated since Symfony 2.7 and will be removed in 3.0.', E_USER_DEPRECATED);
 
-            if (!$manager instanceof EntityManager) {
-                throw new UnexpectedTypeException($manager, 'Doctrine\ORM\EntityManager');
+            if (!$manager instanceof ObjectManager) {
+                throw new UnexpectedTypeException($manager, 'Doctrine\Common\Persistence\ObjectManager');
             }
 
-            @trigger_error('Passing an EntityManager to '.__CLASS__.'::__construct() is deprecated since version 2.7 and will be removed in 3.0.', E_USER_DEPRECATED);
-            @trigger_error('Passing a class to '.__CLASS__.'::__construct() is deprecated since version 2.7 and will be removed in 3.0.', E_USER_DEPRECATED);
+            @trigger_error('Passing an EntityManager to '.__CLASS__.'::__construct() is deprecated since Symfony 2.7 and will be removed in 3.0.', E_USER_DEPRECATED);
+            @trigger_error('Passing a class to '.__CLASS__.'::__construct() is deprecated since Symfony 2.7 and will be removed in 3.0.', E_USER_DEPRECATED);
 
             $queryBuilder = $queryBuilder($manager->getRepository($class));
 
@@ -89,9 +89,10 @@ class ORMQueryBuilderLoader implements EntityLoaderInterface
      */
     public function getEntitiesByIds($identifier, array $values)
     {
-        $qb = clone ($this->queryBuilder);
+        $qb = clone $this->queryBuilder;
         $alias = current($qb->getRootAliases());
         $parameter = 'ORMQueryBuilderLoader_getEntitiesByIds_'.$identifier;
+        $parameter = str_replace('.', '_', $parameter);
         $where = $qb->expr()->in($alias.'.'.$identifier, ':'.$parameter);
 
         // Guess type
@@ -103,7 +104,14 @@ class ORMQueryBuilderLoader implements EntityLoaderInterface
             // Filter out non-integer values (e.g. ""). If we don't, some
             // databases such as PostgreSQL fail.
             $values = array_values(array_filter($values, function ($v) {
-                return (string) $v === (string) (int) $v;
+                return (string) $v === (string) (int) $v || ctype_digit($v);
+            }));
+        } elseif (in_array($metadata->getTypeOfField($identifier), array('uuid', 'guid'))) {
+            $parameterType = Connection::PARAM_STR_ARRAY;
+
+            // Like above, but we just filter out empty strings.
+            $values = array_values(array_filter($values, function ($v) {
+                return '' !== (string) $v;
             }));
         } else {
             $parameterType = Connection::PARAM_STR_ARRAY;

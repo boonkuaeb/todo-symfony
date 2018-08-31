@@ -11,15 +11,15 @@
 
 namespace Symfony\Bridge\Twig\Tests\Command;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\Twig\Command\LintCommand;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Tester\CommandTester;
+use Twig\Loader\FilesystemLoader;
+use Twig\Environment;
 
-/**
- * @covers \Symfony\Bridge\Twig\Command\LintCommand
- */
-class LintCommandTest extends \PHPUnit_Framework_TestCase
+class LintCommandTest extends TestCase
 {
     private $files;
 
@@ -28,7 +28,7 @@ class LintCommandTest extends \PHPUnit_Framework_TestCase
         $tester = $this->createCommandTester();
         $filename = $this->createFile('{{ foo }}');
 
-        $ret = $tester->execute(array('filename' => array($filename)), array('verbosity' => OutputInterface::VERBOSITY_VERBOSE));
+        $ret = $tester->execute(array('filename' => array($filename)), array('verbosity' => OutputInterface::VERBOSITY_VERBOSE, 'decorated' => false));
 
         $this->assertEquals(0, $ret, 'Returns 0 in case of success');
         $this->assertRegExp('/^OK in /', $tester->getDisplay());
@@ -39,7 +39,7 @@ class LintCommandTest extends \PHPUnit_Framework_TestCase
         $tester = $this->createCommandTester();
         $filename = $this->createFile('{{ foo');
 
-        $ret = $tester->execute(array('filename' => array($filename)));
+        $ret = $tester->execute(array('filename' => array($filename)), array('decorated' => false));
 
         $this->assertEquals(1, $ret, 'Returns 1 in case of error');
         $this->assertRegExp('/^KO in /', $tester->getDisplay());
@@ -54,7 +54,7 @@ class LintCommandTest extends \PHPUnit_Framework_TestCase
         $filename = $this->createFile('');
         unlink($filename);
 
-        $ret = $tester->execute(array('filename' => array($filename)));
+        $ret = $tester->execute(array('filename' => array($filename)), array('decorated' => false));
     }
 
     public function testLintFileCompileTimeException()
@@ -62,7 +62,7 @@ class LintCommandTest extends \PHPUnit_Framework_TestCase
         $tester = $this->createCommandTester();
         $filename = $this->createFile("{{ 2|number_format(2, decimal_point='.', ',') }}");
 
-        $ret = $tester->execute(array('filename' => array($filename)));
+        $ret = $tester->execute(array('filename' => array($filename)), array('decorated' => false));
 
         $this->assertEquals(1, $ret, 'Returns 1 in case of error');
         $this->assertRegExp('/^KO in /', $tester->getDisplay());
@@ -73,7 +73,7 @@ class LintCommandTest extends \PHPUnit_Framework_TestCase
      */
     private function createCommandTester()
     {
-        $twig = new \Twig_Environment(new \Twig_Loader_Filesystem());
+        $twig = new Environment(new FilesystemLoader());
 
         $command = new LintCommand();
         $command->setTwigEnvironment($twig);

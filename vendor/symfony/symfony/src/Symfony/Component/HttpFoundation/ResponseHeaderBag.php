@@ -15,8 +15,6 @@ namespace Symfony\Component\HttpFoundation;
  * ResponseHeaderBag is a container for Response HTTP headers.
  *
  * @author Fabien Potencier <fabien@symfony.com>
- *
- * @api
  */
 class ResponseHeaderBag extends HeaderBag
 {
@@ -26,28 +24,10 @@ class ResponseHeaderBag extends HeaderBag
     const DISPOSITION_ATTACHMENT = 'attachment';
     const DISPOSITION_INLINE = 'inline';
 
-    /**
-     * @var array
-     */
     protected $computedCacheControl = array();
-
-    /**
-     * @var array
-     */
     protected $cookies = array();
-
-    /**
-     * @var array
-     */
     protected $headerNames = array();
 
-    /**
-     * Constructor.
-     *
-     * @param array $headers An array of HTTP headers
-     *
-     * @api
-     */
     public function __construct(array $headers = array())
     {
         parent::__construct($headers);
@@ -84,8 +64,6 @@ class ResponseHeaderBag extends HeaderBag
 
     /**
      * {@inheritdoc}
-     *
-     * @api
      */
     public function replace(array $headers = array())
     {
@@ -100,14 +78,12 @@ class ResponseHeaderBag extends HeaderBag
 
     /**
      * {@inheritdoc}
-     *
-     * @api
      */
     public function set($key, $values, $replace = true)
     {
         parent::set($key, $values, $replace);
 
-        $uniqueKey = strtr(strtolower($key), '_', '-');
+        $uniqueKey = str_replace('_', '-', strtolower($key));
         $this->headerNames[$uniqueKey] = $key;
 
         // ensure the cache-control header has sensible defaults
@@ -121,14 +97,12 @@ class ResponseHeaderBag extends HeaderBag
 
     /**
      * {@inheritdoc}
-     *
-     * @api
      */
     public function remove($key)
     {
         parent::remove($key);
 
-        $uniqueKey = strtr(strtolower($key), '_', '-');
+        $uniqueKey = str_replace('_', '-', strtolower($key));
         unset($this->headerNames[$uniqueKey]);
 
         if ('cache-control' === $uniqueKey) {
@@ -152,13 +126,6 @@ class ResponseHeaderBag extends HeaderBag
         return array_key_exists($key, $this->computedCacheControl) ? $this->computedCacheControl[$key] : null;
     }
 
-    /**
-     * Sets a cookie.
-     *
-     * @param Cookie $cookie
-     *
-     * @api
-     */
     public function setCookie(Cookie $cookie)
     {
         $this->cookies[$cookie->getDomain()][$cookie->getPath()][$cookie->getName()] = $cookie;
@@ -170,8 +137,6 @@ class ResponseHeaderBag extends HeaderBag
      * @param string $name
      * @param string $path
      * @param string $domain
-     *
-     * @api
      */
     public function removeCookie($name, $path = '/', $domain = null)
     {
@@ -195,11 +160,9 @@ class ResponseHeaderBag extends HeaderBag
      *
      * @param string $format
      *
-     * @throws \InvalidArgumentException When the $format is invalid
-     *
      * @return array
      *
-     * @api
+     * @throws \InvalidArgumentException When the $format is invalid
      */
     public function getCookies($format = self::COOKIES_FLAT)
     {
@@ -231,8 +194,6 @@ class ResponseHeaderBag extends HeaderBag
      * @param string $domain
      * @param bool   $secure
      * @param bool   $httpOnly
-     *
-     * @api
      */
     public function clearCookie($name, $path = '/', $domain = null, $secure = false, $httpOnly = true)
     {
@@ -248,7 +209,7 @@ class ResponseHeaderBag extends HeaderBag
      *                                 is semantically equivalent to $filename. If the filename is already ASCII,
      *                                 it can be omitted, or just copied from $filename
      *
-     * @return string A string suitable for use as a Content-Disposition field-value.
+     * @return string A string suitable for use as a Content-Disposition field-value
      *
      * @throws \InvalidArgumentException
      *

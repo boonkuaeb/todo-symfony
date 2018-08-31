@@ -18,15 +18,11 @@ use Symfony\Component\Validator\Constraint;
  * @Target({"CLASS", "PROPERTY", "METHOD", "ANNOTATION"})
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
- *
- * @api
  */
 class Callback extends Constraint
 {
     /**
      * @var string|callable
-     *
-     * @since 2.4
      */
     public $callback;
 
@@ -48,10 +44,10 @@ class Callback extends Constraint
         }
 
         if (is_array($options) && isset($options['methods'])) {
-            @trigger_error('The "methods" option of the '.__CLASS__.' class is deprecated since version 2.4 and will be removed in 3.0. Use the "callback" option instead.', E_USER_DEPRECATED);
+            @trigger_error('The "methods" option of the '.__CLASS__.' class is deprecated since Symfony 2.4 and will be removed in 3.0. Use the "callback" option instead.', E_USER_DEPRECATED);
         }
 
-        if (is_array($options) && !isset($options['callback']) && !isset($options['methods']) && !isset($options['groups'])) {
+        if (is_array($options) && !isset($options['callback']) && !isset($options['methods']) && !isset($options['groups']) && !isset($options['payload'])) {
             if (is_callable($options) || !$options) {
                 $options = array('callback' => $options);
             } else {

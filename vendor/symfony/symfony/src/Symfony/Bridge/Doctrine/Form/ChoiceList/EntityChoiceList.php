@@ -11,7 +11,7 @@
 
 namespace Symfony\Bridge\Doctrine\Form\ChoiceList;
 
-@trigger_error('The '.__NAMESPACE__.'\EntityChoiceList class is deprecated since version 2.7 and will be removed in 3.0. Use Symfony\Bridge\Doctrine\Form\ChoiceList\DoctrineChoiceLoader instead.', E_USER_DEPRECATED);
+@trigger_error('The '.__NAMESPACE__.'\EntityChoiceList class is deprecated since Symfony 2.7 and will be removed in 3.0. Use Symfony\Bridge\Doctrine\Form\ChoiceList\DoctrineChoiceLoader instead.', E_USER_DEPRECATED);
 
 use Doctrine\Common\Persistence\Mapping\ClassMetadata;
 use Doctrine\Common\Persistence\ObjectManager;
@@ -44,6 +44,13 @@ class EntityChoiceList extends ObjectChoiceList
      * @var ClassMetadata
      */
     private $classMetadata;
+
+    /**
+     * Metadata for target class of primary key association.
+     *
+     * @var ClassMetadata
+     */
+    private $idClassMetadata;
 
     /**
      * Contains the query builder that builds the query for fetching the
@@ -102,7 +109,7 @@ class EntityChoiceList extends ObjectChoiceList
      * @param string                    $groupPath         A property path pointing to the property used
      *                                                     to group the choices. Only allowed if
      *                                                     the choices are given as flat array.
-     * @param PropertyAccessorInterface $propertyAccessor  The reflection graph for reading property paths.
+     * @param PropertyAccessorInterface $propertyAccessor  The reflection graph for reading property paths
      */
     public function __construct(ObjectManager $manager, $class, $labelPath = null, EntityLoaderInterface $entityLoader = null, $entities = null, array $preferredEntities = array(), $groupPath = null, PropertyAccessorInterface $propertyAccessor = null)
     {
@@ -112,16 +119,21 @@ class EntityChoiceList extends ObjectChoiceList
         $this->class = $this->classMetadata->getName();
         $this->loaded = is_array($entities) || $entities instanceof \Traversable;
         $this->preferredEntities = $preferredEntities;
+        list(
+            $this->idAsIndex,
+            $this->idAsValue,
+            $this->idField
+        ) = $this->getIdentifierInfoForClass($this->classMetadata);
 
-        $identifier = $this->classMetadata->getIdentifierFieldNames();
+        if (null !== $this->idField && $this->classMetadata->hasAssociation($this->idField)) {
+            $this->idClassMetadata = $this->em->getClassMetadata(
+                $this->classMetadata->getAssociationTargetClass($this->idField)
+            );
 
-        if (1 === count($identifier)) {
-            $this->idField = $identifier[0];
-            $this->idAsValue = true;
-
-            if (in_array($this->classMetadata->getTypeOfField($this->idField), array('integer', 'smallint', 'bigint'))) {
-                $this->idAsIndex = true;
-            }
+            list(
+                $this->idAsIndex,
+                $this->idAsValue
+            ) = $this->getIdentifierInfoForClass($this->idClassMetadata);
         }
 
         if (!$this->loaded) {
@@ -202,8 +214,6 @@ class EntityChoiceList extends ObjectChoiceList
     /**
      * Returns the entities corresponding to the given values.
      *
-     * @param array $values
-     *
      * @return array
      *
      * @see ChoiceListInterface
@@ -233,7 +243,7 @@ class EntityChoiceList extends ObjectChoiceList
                 // "INDEX BY" clause to the Doctrine query in the loader,
                 // but I'm not sure whether that's doable in a generic fashion.
                 foreach ($unorderedEntities as $entity) {
-                    $value = $this->fixValue(current($this->getIdentifierValues($entity)));
+                    $value = $this->fixValue($this->getSingleIdentifierValue($entity));
                     $entitiesByValue[$value] = $entity;
                 }
 
@@ -254,8 +264,6 @@ class EntityChoiceList extends ObjectChoiceList
 
     /**
      * Returns the values corresponding to the given entities.
-     *
-     * @param array $entities
      *
      * @return array
      *
@@ -279,7 +287,7 @@ class EntityChoiceList extends ObjectChoiceList
                 foreach ($entities as $i => $entity) {
                     if ($entity instanceof $this->class) {
                         // Make sure to convert to the right format
-                        $values[$i] = $this->fixValue(current($this->getIdentifierValues($entity)));
+                        $values[$i] = $this->fixValue($this->getSingleIdentifierValue($entity));
                     }
                 }
 
@@ -304,7 +312,7 @@ class EntityChoiceList extends ObjectChoiceList
      */
     public function getIndicesForChoices(array $entities)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.4 and will be removed in 3.0.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.4 and will be removed in 3.0.', E_USER_DEPRECATED);
 
         // Performance optimization
         if (empty($entities)) {
@@ -322,7 +330,7 @@ class EntityChoiceList extends ObjectChoiceList
                 foreach ($entities as $i => $entity) {
                     if ($entity instanceof $this->class) {
                         // Make sure to convert to the right format
-                        $indices[$i] = $this->fixIndex(current($this->getIdentifierValues($entity)));
+                        $indices[$i] = $this->fixIndex($this->getSingleIdentifierValue($entity));
                     }
                 }
 
@@ -347,7 +355,7 @@ class EntityChoiceList extends ObjectChoiceList
      */
     public function getIndicesForValues(array $values)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.4 and will be removed in 3.0.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.4 and will be removed in 3.0.', E_USER_DEPRECATED);
 
         // Performance optimization
         if (empty($values)) {
@@ -377,13 +385,13 @@ class EntityChoiceList extends ObjectChoiceList
      *
      * @param mixed $entity The choice to create an index for
      *
-     * @return int|string A unique index containing only ASCII letters,
-     *                    digits and underscores.
+     * @return int|string a unique index containing only ASCII letters,
+     *                    digits and underscores
      */
     protected function createIndex($entity)
     {
         if ($this->idAsIndex) {
-            return $this->fixIndex(current($this->getIdentifierValues($entity)));
+            return $this->fixIndex($this->getSingleIdentifierValue($entity));
         }
 
         return parent::createIndex($entity);
@@ -398,12 +406,12 @@ class EntityChoiceList extends ObjectChoiceList
      *
      * @param mixed $entity The choice to create a value for
      *
-     * @return int|string A unique value without character limitations.
+     * @return int|string A unique value without character limitations
      */
     protected function createValue($entity)
     {
         if ($this->idAsValue) {
-            return (string) current($this->getIdentifierValues($entity));
+            return (string) $this->getSingleIdentifierValue($entity);
         }
 
         return parent::createValue($entity);
@@ -427,6 +435,36 @@ class EntityChoiceList extends ObjectChoiceList
     }
 
     /**
+     * Get identifier information for a class.
+     *
+     * @param ClassMetadata $classMetadata The entity metadata
+     *
+     * @return array Return an array with idAsIndex, idAsValue and identifier
+     */
+    private function getIdentifierInfoForClass(ClassMetadata $classMetadata)
+    {
+        $identifier = null;
+        $idAsIndex = false;
+        $idAsValue = false;
+
+        $identifiers = $classMetadata->getIdentifierFieldNames();
+
+        if (1 === count($identifiers)) {
+            $identifier = $identifiers[0];
+
+            if (!$classMetadata->hasAssociation($identifier)) {
+                $idAsValue = true;
+
+                if (in_array($classMetadata->getTypeOfField($identifier), array('integer', 'smallint', 'bigint'))) {
+                    $idAsIndex = true;
+                }
+            }
+        }
+
+        return array($idAsIndex, $idAsValue, $identifier);
+    }
+
+    /**
      * Loads the list with entities.
      *
      * @throws StringCastException
@@ -447,6 +485,33 @@ class EntityChoiceList extends ObjectChoiceList
         }
 
         $this->loaded = true;
+    }
+
+    /**
+     * Returns the first (and only) value of the identifier fields of an entity.
+     *
+     * Doctrine must know about this entity, that is, the entity must already
+     * be persisted or added to the identity map before. Otherwise an
+     * exception is thrown.
+     *
+     * @param object $entity The entity for which to get the identifier
+     *
+     * @return array The identifier values
+     *
+     * @throws RuntimeException If the entity does not exist in Doctrine's identity map
+     */
+    private function getSingleIdentifierValue($entity)
+    {
+        $value = current($this->getIdentifierValues($entity));
+
+        if ($this->idClassMetadata) {
+            $class = $this->idClassMetadata->getName();
+            if ($value instanceof $class) {
+                $value = current($this->idClassMetadata->getIdentifierValues($value));
+            }
+        }
+
+        return $value;
     }
 
     /**

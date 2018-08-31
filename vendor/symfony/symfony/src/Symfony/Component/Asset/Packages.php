@@ -38,11 +38,6 @@ class Packages
         }
     }
 
-    /**
-     * Sets the default package.
-     *
-     * @param PackageInterface $defaultPackage The default package
-     */
     public function setDefaultPackage(PackageInterface $defaultPackage)
     {
         $this->defaultPackage = $defaultPackage;
@@ -67,7 +62,7 @@ class Packages
      * @return PackageInterface An asset package
      *
      * @throws InvalidArgumentException If there is no package by that name
-     * @throws LogicException If no default package is defined
+     * @throws LogicException           If no default package is defined
      */
     public function getPackage($name = null)
     {

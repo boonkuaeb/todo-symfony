@@ -11,10 +11,11 @@
 
 namespace Symfony\Bundle\FrameworkBundle\Tests\DependencyInjection;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\FrameworkBundle\DependencyInjection\Configuration;
 use Symfony\Component\Config\Definition\Processor;
 
-class ConfigurationTest extends \PHPUnit_Framework_TestCase
+class ConfigurationTest extends TestCase
 {
     public function testDefaultConfig()
     {
@@ -24,6 +25,68 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(
             array_merge(array('secret' => 's3cr3t', 'trusted_hosts' => array()), self::getBundleDefaultConfig()),
             $config
+        );
+    }
+
+    public function testDoNoDuplicateDefaultFormResources()
+    {
+        $input = array('templating' => array(
+            'form' => array('resources' => array('FrameworkBundle:Form')),
+            'engines' => array('php'),
+        ));
+
+        $processor = new Processor();
+        $config = $processor->processConfiguration(new Configuration(true), array($input));
+
+        $this->assertEquals(array('FrameworkBundle:Form'), $config['templating']['form']['resources']);
+    }
+
+    /**
+     * @dataProvider getTestValidSessionName
+     */
+    public function testValidSessionName($sessionName)
+    {
+        $processor = new Processor();
+        $config = $processor->processConfiguration(
+            new Configuration(true),
+            array(array('session' => array('name' => $sessionName)))
+        );
+
+        $this->assertEquals($sessionName, $config['session']['name']);
+    }
+
+    public function getTestValidSessionName()
+    {
+        return array(
+            array(null),
+            array('PHPSESSID'),
+            array('a&b'),
+            array(',_-!@#$%^*(){}:<>/?'),
+        );
+    }
+
+    /**
+     * @dataProvider getTestInvalidSessionName
+     * @expectedException \Symfony\Component\Config\Definition\Exception\InvalidConfigurationException
+     */
+    public function testInvalidSessionName($sessionName)
+    {
+        $processor = new Processor();
+        $processor->processConfiguration(
+            new Configuration(true),
+            array(array('session' => array('name' => $sessionName)))
+        );
+    }
+
+    public function getTestInvalidSessionName()
+    {
+        return array(
+            array('a.b'),
+            array('a['),
+            array('a[]'),
+            array('a[b]'),
+            array('a=b'),
+            array('a+b'),
         );
     }
 
@@ -53,6 +116,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
             array(array(), array()),
             array(array('10.0.0.0/8'), array('10.0.0.0/8')),
             array(array('::ffff:0:0/96'), array('::ffff:0:0/96')),
+            array(array('0.0.0.0/0'), array('0.0.0.0/0')),
         );
     }
 
@@ -155,7 +219,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
             'annotations' => array(
                 'cache' => 'file',
                 'file_cache_dir' => '%kernel.cache_dir%/annotations',
-                'debug' => '%kernel.debug%',
+                'debug' => true,
             ),
             'serializer' => array(
                 'enabled' => false,

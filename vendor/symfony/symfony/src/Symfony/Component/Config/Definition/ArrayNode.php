@@ -55,14 +55,17 @@ class ArrayNode extends BaseNode implements PrototypeNodeInterface
             return $value;
         }
 
+        $normalized = array();
+
         foreach ($value as $k => $v) {
             if (false !== strpos($k, '-') && false === strpos($k, '_') && !array_key_exists($normalizedKey = str_replace('-', '_', $k), $value)) {
-                $value[$normalizedKey] = $v;
-                unset($value[$k]);
+                $normalized[$normalizedKey] = $v;
+            } else {
+                $normalized[$k] = $v;
             }
         }
 
-        return $value;
+        return $normalized;
     }
 
     /**
@@ -78,7 +81,7 @@ class ArrayNode extends BaseNode implements PrototypeNodeInterface
     /**
      * Sets the xml remappings that should be performed.
      *
-     * @param array $remappings an array of the form array(array(string, string))
+     * @param array $remappings An array of the form array(array(string, string))
      */
     public function setXmlRemappings(array $remappings)
     {
@@ -147,9 +150,7 @@ class ArrayNode extends BaseNode implements PrototypeNodeInterface
     }
 
     /**
-     * Sets the node Name.
-     *
-     * @param string $name The node's name
+     * {@inheritdoc}
      */
     public function setName($name)
     {
@@ -157,9 +158,7 @@ class ArrayNode extends BaseNode implements PrototypeNodeInterface
     }
 
     /**
-     * Checks if the node has a default value.
-     *
-     * @return bool
+     * {@inheritdoc}
      */
     public function hasDefaultValue()
     {
@@ -167,11 +166,7 @@ class ArrayNode extends BaseNode implements PrototypeNodeInterface
     }
 
     /**
-     * Retrieves the default value.
-     *
-     * @return array The default value
-     *
-     * @throws \RuntimeException if the node has no default value
+     * {@inheritdoc}
      */
     public function getDefaultValue()
     {
@@ -191,8 +186,6 @@ class ArrayNode extends BaseNode implements PrototypeNodeInterface
 
     /**
      * Adds a child node.
-     *
-     * @param NodeInterface $node The child node to add
      *
      * @throws \InvalidArgumentException when the child node has no name
      * @throws \InvalidArgumentException when the child node's name is not unique
@@ -341,8 +334,8 @@ class ArrayNode extends BaseNode implements PrototypeNodeInterface
     /**
      * Merges values together.
      *
-     * @param mixed $leftSide  The left side to merge.
-     * @param mixed $rightSide The right side to merge.
+     * @param mixed $leftSide  The left side to merge
+     * @param mixed $rightSide The right side to merge
      *
      * @return mixed The merged values
      *

@@ -48,15 +48,13 @@ class Acl implements AuditableAclInterface, NotifyPropertyChanged
     private $listeners = array();
 
     /**
-     * Constructor.
-     *
      * @param int                                 $id
      * @param ObjectIdentityInterface             $objectIdentity
      * @param PermissionGrantingStrategyInterface $permissionGrantingStrategy
      * @param array                               $loadedSids
      * @param bool                                $entriesInheriting
      */
-    public function __construct($id, ObjectIdentityInterface $objectIdentity, PermissionGrantingStrategyInterface $permissionGrantingStrategy, array $loadedSids = array(), $entriesInheriting)
+    public function __construct($id, ObjectIdentityInterface $objectIdentity, PermissionGrantingStrategyInterface $permissionGrantingStrategy, array $loadedSids, $entriesInheriting)
     {
         $this->id = $id;
         $this->objectIdentity = $objectIdentity;
@@ -65,11 +63,6 @@ class Acl implements AuditableAclInterface, NotifyPropertyChanged
         $this->entriesInheriting = $entriesInheriting;
     }
 
-    /**
-     * Adds a property changed listener.
-     *
-     * @param PropertyChangedListener $listener
-     */
     public function addPropertyChangedListener(PropertyChangedListener $listener)
     {
         $this->listeners[] = $listener;

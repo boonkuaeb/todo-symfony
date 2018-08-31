@@ -24,7 +24,7 @@ use Symfony\Component\Security\Acl\Permission\MaskBuilder;
 use Symfony\Component\Security\Acl\Model\MutableAclProviderInterface;
 
 /**
- * Sets ACL for objects
+ * Sets ACL for objects.
  *
  * @author Kévin Dunglas <kevin@les-tilleuls.coop>
  */
@@ -120,7 +120,7 @@ EOF
             foreach ($userOption as $user) {
                 $data = explode(':', $user, 2);
 
-                if (count($data) === 1) {
+                if (1 === count($data)) {
                     throw new \InvalidArgumentException('The user must follow the format "Acme/MyUser:username".');
                 }
 
@@ -162,7 +162,7 @@ EOF
     }
 
     /**
-     * Gets the mask builder
+     * Gets the mask builder.
      *
      * @return MaskBuilder
      */

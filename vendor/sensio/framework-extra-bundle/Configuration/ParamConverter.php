@@ -127,7 +127,7 @@ class ParamConverter extends ConfigurationAnnotation
     /**
      * Sets whether or not the parameter is optional.
      *
-     * @param bool $optional Wether the parameter is optional
+     * @param bool $optional Whether the parameter is optional
      */
     public function setIsOptional($optional)
     {
@@ -155,7 +155,7 @@ class ParamConverter extends ConfigurationAnnotation
     }
 
     /**
-     * Set explicit converter name
+     * Set explicit converter name.
      *
      * @param string $converter
      */
@@ -168,6 +168,7 @@ class ParamConverter extends ConfigurationAnnotation
      * Returns the annotation alias name.
      *
      * @return string
+     *
      * @see ConfigurationInterface
      */
     public function getAliasName()
@@ -176,9 +177,10 @@ class ParamConverter extends ConfigurationAnnotation
     }
 
     /**
-     * Multiple ParamConverters are allowed
+     * Multiple ParamConverters are allowed.
      *
      * @return bool
+     *
      * @see ConfigurationInterface
      */
     public function allowArray()

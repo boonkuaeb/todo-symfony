@@ -23,8 +23,6 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Florian Eckerstorfer <florian@eckerstorfer.org>
  * @author Bernhard Schussek <bschussek@gmail.com>
- *
- * @api
  */
 class ChoiceValidator extends ConstraintValidator
 {
@@ -83,7 +81,7 @@ class ChoiceValidator extends ConstraintValidator
 
             $count = count($value);
 
-            if ($constraint->min !== null && $count < $constraint->min) {
+            if (null !== $constraint->min && $count < $constraint->min) {
                 if ($this->context instanceof ExecutionContextInterface) {
                     $this->context->buildViolation($constraint->minMessage)
                         ->setParameter('{{ limit }}', $constraint->min)
@@ -101,7 +99,7 @@ class ChoiceValidator extends ConstraintValidator
                 return;
             }
 
-            if ($constraint->max !== null && $count > $constraint->max) {
+            if (null !== $constraint->max && $count > $constraint->max) {
                 if ($this->context instanceof ExecutionContextInterface) {
                     $this->context->buildViolation($constraint->maxMessage)
                         ->setParameter('{{ limit }}', $constraint->max)

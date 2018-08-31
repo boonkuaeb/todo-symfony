@@ -97,16 +97,16 @@ interface AclInterface extends \Serializable
      * @param array $securityIdentities
      * @param bool  $administrativeMode
      *
-     * @throws NoAceFoundException when no ACE was applicable for this request
-     *
      * @return bool
+     *
+     * @throws NoAceFoundException when no ACE was applicable for this request
      */
     public function isGranted(array $masks, array $securityIdentities, $administrativeMode = false);
 
     /**
      * Whether the ACL has loaded ACEs for all of the passed security identities.
      *
-     * @param mixed $securityIdentities an implementation of SecurityIdentityInterface, or an array thereof
+     * @param mixed $securityIdentities An implementation of SecurityIdentityInterface, or an array thereof
      *
      * @return bool
      */

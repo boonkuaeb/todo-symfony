@@ -26,9 +26,6 @@ class SwiftMailerHandler extends BaseSwiftMailerHandler
 
     protected $instantFlush = false;
 
-    /**
-     * @param \Swift_Transport $transport
-     */
     public function setTransport(\Swift_Transport $transport)
     {
         $this->transport = $transport;
@@ -36,8 +33,6 @@ class SwiftMailerHandler extends BaseSwiftMailerHandler
 
     /**
      * After the kernel has been terminated we will always flush messages.
-     *
-     * @param PostResponseEvent $event
      */
     public function onKernelTerminate(PostResponseEvent $event)
     {
@@ -45,9 +40,7 @@ class SwiftMailerHandler extends BaseSwiftMailerHandler
     }
 
     /**
-     * After the CLI application has been terminated we will always flush messages
-     *
-     * @param ConsoleTerminateEvent $event
+     * After the CLI application has been terminated we will always flush messages.
      */
     public function onCliTerminate(ConsoleTerminateEvent $event)
     {

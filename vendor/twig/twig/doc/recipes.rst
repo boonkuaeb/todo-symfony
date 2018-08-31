@@ -1,6 +1,61 @@
 Recipes
 =======
 
+.. _deprecation-notices:
+
+Displaying Deprecation Notices
+------------------------------
+
+Deprecated features generate deprecation notices (via a call to the
+``trigger_error()`` PHP function). By default, they are silenced and never
+displayed nor logged.
+
+To easily remove all deprecated feature usages from your templates, write and
+run a script along the lines of the following::
+
+    require_once __DIR__.'/vendor/autoload.php';
+
+    $twig = create_your_twig_env();
+
+    $deprecations = new Twig_Util_DeprecationCollector($twig);
+
+    print_r($deprecations->collectDir(__DIR__.'/templates'));
+
+The ``collectDir()`` method compiles all templates found in a directory,
+catches deprecation notices, and return them.
+
+.. tip::
+
+    If your templates are not stored on the filesystem, use the ``collect()``
+    method instead. ``collect()`` takes a ``Traversable`` which must return
+    template names as keys and template contents as values (as done by
+    ``Twig_Util_TemplateDirIterator``).
+
+However, this code won't find all deprecations (like using deprecated some Twig
+classes). To catch all notices, register a custom error handler like the one
+below::
+
+    $deprecations = array();
+    set_error_handler(function ($type, $msg) use (&$deprecations) {
+        if (E_USER_DEPRECATED === $type) {
+            $deprecations[] = $msg;
+        }
+    });
+
+    // run your application
+
+    print_r($deprecations);
+
+Note that most deprecation notices are triggered during **compilation**, so
+they won't be generated when templates are already cached.
+
+.. tip::
+
+    If you want to manage the deprecation notices from your PHPUnit tests, have
+    a look at the `symfony/phpunit-bridge
+    <https://github.com/symfony/phpunit-bridge>`_ package, which eases the
+    process a lot.
+
 Making a Layout conditional
 ---------------------------
 
@@ -92,7 +147,7 @@ parent's full, unambiguous template path in the extends tag:
 .. note::
 
     This recipe was inspired by the following Django wiki page:
-    http://code.djangoproject.com/wiki/ExtendingTemplates
+    https://code.djangoproject.com/wiki/ExtendingTemplates
 
 Customizing the Syntax
 ----------------------
@@ -103,7 +158,7 @@ syntax. But for specific projects, it can make sense to change the defaults.
 
 To change the block delimiters, you need to create your own lexer object::
 
-    $twig = new Twig_Environment();
+    $twig = new Twig_Environment(...);
 
     $lexer = new Twig_Lexer($twig, array(
         'tag_comment'   => array('{#', '#}'),
@@ -222,7 +277,7 @@ For functions, use ``registerUndefinedFunctionCallback()``::
     // don't try this at home as it's not secure at all!
     $twig->registerUndefinedFunctionCallback(function ($name) {
         if (function_exists($name)) {
-            return new Twig_Function_Function($name);
+            return new Twig_Function($name, $name);
         }
 
         return false;
@@ -248,7 +303,7 @@ saving it. If the template code is stored in a `$template` variable, here is
 how you can do it::
 
     try {
-        $twig->parse($twig->tokenize($template));
+        $twig->parse($twig->tokenize(new Twig_Source($template)));
 
         // the $template is valid
     } catch (Twig_Error_Syntax $e) {
@@ -260,7 +315,7 @@ If you iterate over a set of files, you can pass the filename to the
 
     foreach ($files as $file) {
         try {
-            $twig->parse($twig->tokenize($template, $file));
+            $twig->parse($twig->tokenize(new Twig_Source($template, $file->getFilename(), $file)));
 
             // the $template is valid
         } catch (Twig_Error_Syntax $e) {
@@ -274,24 +329,19 @@ If you iterate over a set of files, you can pass the filename to the
     is enforced during template rendering (as Twig needs the context for some
     checks like allowed methods on objects).
 
-Refreshing modified Templates when APC is enabled and apc.stat = 0
-------------------------------------------------------------------
+Refreshing modified Templates when OPcache or APC is enabled
+------------------------------------------------------------
 
-When using APC with ``apc.stat`` set to ``0`` and Twig cache enabled, clearing
-the template cache won't update the APC cache. To get around this, one can
-extend ``Twig_Environment`` and force the update of the APC cache when Twig
-rewrites the cache::
+When using OPcache with ``opcache.validate_timestamps`` set to ``0`` or APC
+with ``apc.stat`` set to ``0`` and Twig cache enabled, clearing the template
+cache won't update the cache.
 
-    class Twig_Environment_APC extends Twig_Environment
-    {
-        protected function writeCacheFile($file, $content)
-        {
-            parent::writeCacheFile($file, $content);
+To get around this, force Twig to invalidate the bytecode cache::
 
-            // Compile cached file into bytecode cache
-            apc_compile_file($file);
-        }
-    }
+    $twig = new Twig_Environment($loader, array(
+        'cache' => new Twig_Cache_Filesystem('/some/cache/path', Twig_Cache_Filesystem::FORCE_BYTECODE_INVALIDATION),
+        // ...
+    ));
 
 Reusing a stateful Node Visitor
 -------------------------------
@@ -304,7 +354,7 @@ This can be easily achieved with the following code::
 
     protected $someTemplateState = array();
 
-    public function enterNode(Twig_NodeInterface $node, Twig_Environment $env)
+    public function enterNode(Twig_Node $node, Twig_Environment $env)
     {
         if ($node instanceof Twig_Node_Module) {
             // reset the state as we are entering a new template
@@ -341,7 +391,7 @@ We have created a simple ``templates`` table that hosts two templates:
 
 Now, let's define a loader able to use this database::
 
-    class DatabaseTwigLoader implements Twig_LoaderInterface, Twig_ExistsLoaderInterface
+    class DatabaseTwigLoader implements Twig_LoaderInterface
     {
         protected $dbh;
 
@@ -350,16 +400,15 @@ Now, let's define a loader able to use this database::
             $this->dbh = $dbh;
         }
 
-        public function getSource($name)
+        public function getSourceContext($name)
         {
             if (false === $source = $this->getValue('source', $name)) {
                 throw new Twig_Error_Loader(sprintf('Template "%s" does not exist.', $name));
             }
 
-            return $source;
+            return new Twig_Source($source, $name);
         }
 
-        // Twig_ExistsLoaderInterface as of Twig 1.11
         public function exists($name)
         {
             return $name === $this->getValue('name', $name);
@@ -422,4 +471,57 @@ logical name, and not the path from the filesystem::
 Now that the ``base.twig`` templates is defined in an array loader, you can
 remove it from the database, and everything else will still work as before.
 
-.. _callback: http://www.php.net/manual/en/function.is-callable.php
+Loading a Template from a String
+--------------------------------
+
+From a template, you can easily load a template stored in a string via the
+``template_from_string`` function (via the ``Twig_Extension_StringLoader``
+extension):
+
+.. code-block:: jinja
+
+    {{ include(template_from_string("Hello {{ name }}")) }}
+
+From PHP, it's also possible to load a template stored in a string via
+``Twig_Environment::createTemplate()``::
+
+    $template = $twig->createTemplate('hello {{ name }}');
+    echo $template->render(array('name' => 'Fabien'));
+
+Using Twig and AngularJS in the same Templates
+----------------------------------------------
+
+Mixing different template syntaxes in the same file is not a recommended
+practice as both AngularJS and Twig use the same delimiters in their syntax:
+``{{`` and ``}}``.
+
+Still, if you want to use AngularJS and Twig in the same template, there are
+two ways to make it work depending on the amount of AngularJS you need to
+include in your templates:
+
+* Escaping the AngularJS delimiters by wrapping AngularJS sections with the
+  ``{% verbatim %}`` tag or by escaping each delimiter via ``{{ '{{' }}`` and
+  ``{{ '}}' }}``;
+
+* Changing the delimiters of one of the template engines (depending on which
+  engine you introduced last):
+
+  * For AngularJS, change the interpolation tags using the
+    ``interpolateProvider`` service, for instance at the module initialization
+    time:
+
+    ..  code-block:: javascript
+
+        angular.module('myApp', []).config(function($interpolateProvider) {
+            $interpolateProvider.startSymbol('{[').endSymbol(']}');
+        });
+
+  * For Twig, change the delimiters via the ``tag_variable`` Lexer option:
+
+    ..  code-block:: php
+
+        $env->setLexer(new Twig_Lexer($env, array(
+            'tag_variable' => array('{[', ']}'),
+        )));
+
+.. _callback: https://secure.php.net/manual/en/function.is-callable.php

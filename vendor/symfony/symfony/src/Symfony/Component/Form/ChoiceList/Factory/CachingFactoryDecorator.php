@@ -22,9 +22,6 @@ use Symfony\Component\Form\ChoiceList\View\ChoiceListView;
  */
 class CachingFactoryDecorator implements ChoiceListFactoryInterface
 {
-    /**
-     * @var ChoiceListFactoryInterface
-     */
     private $decoratedFactory;
 
     /**
@@ -48,7 +45,7 @@ class CachingFactoryDecorator implements ChoiceListFactoryInterface
      *
      * @return string The SHA-256 hash
      *
-     * @internal Should not be used by user-land code.
+     * @internal should not be used by user-land code
      */
     public static function generateHash($value, $namespace = '')
     {
@@ -62,7 +59,7 @@ class CachingFactoryDecorator implements ChoiceListFactoryInterface
             });
         }
 
-        return hash('sha256', $namespace.':'.json_encode($value));
+        return hash('sha256', $namespace.':'.serialize($value));
     }
 
     /**
@@ -89,11 +86,6 @@ class CachingFactoryDecorator implements ChoiceListFactoryInterface
         }
     }
 
-    /**
-     * Decorates the given factory.
-     *
-     * @param ChoiceListFactoryInterface $decoratedFactory The decorated factory
-     */
     public function __construct(ChoiceListFactoryInterface $decoratedFactory)
     {
         $this->decoratedFactory = $decoratedFactory;
@@ -141,7 +133,7 @@ class CachingFactoryDecorator implements ChoiceListFactoryInterface
      * @deprecated Added for backwards compatibility in Symfony 2.7, to be
      *             removed in Symfony 3.0.
      */
-    public function createListFromFlippedChoices($choices, $value = null)
+    public function createListFromFlippedChoices($choices, $value = null, $triggerDeprecationNotice = true)
     {
         if ($choices instanceof \Traversable) {
             $choices = iterator_to_array($choices);
@@ -158,7 +150,7 @@ class CachingFactoryDecorator implements ChoiceListFactoryInterface
         $hash = self::generateHash(array($flatChoices, $value), 'fromFlippedChoices');
 
         if (!isset($this->lists[$hash])) {
-            $this->lists[$hash] = $this->decoratedFactory->createListFromFlippedChoices($choices, $value);
+            $this->lists[$hash] = $this->decoratedFactory->createListFromFlippedChoices($choices, $value, $triggerDeprecationNotice);
         }
 
         return $this->lists[$hash];

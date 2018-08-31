@@ -11,7 +11,7 @@
 
 namespace Symfony\Bundle\FrameworkBundle\HttpCache;
 
-use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\HttpKernel\HttpCache\HttpCache as BaseHttpCache;
 use Symfony\Component\HttpKernel\HttpCache\Esi;
 use Symfony\Component\HttpKernel\HttpCache\Store;
@@ -29,12 +29,10 @@ abstract class HttpCache extends BaseHttpCache
     protected $kernel;
 
     /**
-     * Constructor.
-     *
-     * @param HttpKernelInterface $kernel   An HttpKernelInterface instance
-     * @param string              $cacheDir The cache directory (default used if null)
+     * @param KernelInterface $kernel   A KernelInterface instance
+     * @param string          $cacheDir The cache directory (default used if null)
      */
-    public function __construct(HttpKernelInterface $kernel, $cacheDir = null)
+    public function __construct(KernelInterface $kernel, $cacheDir = null)
     {
         $this->kernel = $kernel;
         $this->cacheDir = $cacheDir;
@@ -54,8 +52,9 @@ abstract class HttpCache extends BaseHttpCache
     protected function forward(Request $request, $raw = false, Response $entry = null)
     {
         $this->getKernel()->boot();
-        $this->getKernel()->getContainer()->set('cache', $this);
-        $this->getKernel()->getContainer()->set($this->getSurrogate()->getName(), $this->getSurrogate());
+        $container = $this->getKernel()->getContainer();
+        $container->set('cache', $this);
+        $container->set($this->getSurrogate()->getName(), $this->getSurrogate());
 
         return parent::forward($request, $raw, $entry);
     }
@@ -84,7 +83,7 @@ abstract class HttpCache extends BaseHttpCache
      */
     protected function createEsi()
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.6 and will be removed in 3.0. Use createSurrogate() instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.6 and will be removed in 3.0. Use createSurrogate() instead.', E_USER_DEPRECATED);
 
         return $this->createSurrogate();
     }

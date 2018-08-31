@@ -39,8 +39,6 @@ class CheckReferenceValidityPass implements CompilerPassInterface
 
     /**
      * Processes the ContainerBuilder to validate References.
-     *
-     * @param ContainerBuilder $container
      */
     public function process(ContainerBuilder $container)
     {
@@ -64,7 +62,6 @@ class CheckReferenceValidityPass implements CompilerPassInterface
             }
 
             $this->currentId = $id;
-            $this->currentDefinition = $definition;
             $this->currentScope = $scope = $definition->getScope();
 
             if (ContainerInterface::SCOPE_CONTAINER === $scope) {
@@ -86,7 +83,7 @@ class CheckReferenceValidityPass implements CompilerPassInterface
      *
      * @param array $arguments An array of Reference objects
      *
-     * @throws RuntimeException when there is a reference to an abstract definition.
+     * @throws RuntimeException when there is a reference to an abstract definition
      */
     private function validateReferences(array $arguments)
     {
@@ -112,9 +109,6 @@ class CheckReferenceValidityPass implements CompilerPassInterface
 
     /**
      * Validates the scope of a single Reference.
-     *
-     * @param Reference  $reference
-     * @param Definition $definition
      *
      * @throws ScopeWideningInjectionException when the definition references a service of a narrower scope
      * @throws ScopeCrossingInjectionException when the definition references a service of another scope hierarchy

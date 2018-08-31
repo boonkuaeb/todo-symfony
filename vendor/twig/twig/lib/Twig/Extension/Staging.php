@@ -3,49 +3,50 @@
 /*
  * This file is part of Twig.
  *
- * (c) 2012 Fabien Potencier
+ * (c) Fabien Potencier
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
 /**
- * Internal class.
- *
- * This class is used by Twig_Environment as a staging area and must not be used directly.
+ * Used by Twig_Environment as a staging area.
  *
  * @author Fabien Potencier <fabien@symfony.com>
+ *
+ * @internal
  */
-class Twig_Extension_Staging extends Twig_Extension
+final class Twig_Extension_Staging extends Twig_Extension
 {
-    protected $functions = array();
-    protected $filters = array();
-    protected $visitors = array();
-    protected $tokenParsers = array();
-    protected $globals = array();
-    protected $tests = array();
+    private $functions = array();
+    private $filters = array();
+    private $visitors = array();
+    private $tokenParsers = array();
+    private $tests = array();
 
-    public function addFunction($name, $function)
+    public function addFunction(Twig_Function $function)
     {
-        $this->functions[$name] = $function;
+        if (isset($this->functions[$function->getName()])) {
+            throw new LogicException(sprintf('Function "%s" is already registered.', $function->getName()));
+        }
+
+        $this->functions[$function->getName()] = $function;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getFunctions()
     {
         return $this->functions;
     }
 
-    public function addFilter($name, $filter)
+    public function addFilter(Twig_Filter $filter)
     {
-        $this->filters[$name] = $filter;
+        if (isset($this->filters[$filter->getName()])) {
+            throw new LogicException(sprintf('Filter "%s" is already registered.', $filter->getName()));
+        }
+
+        $this->filters[$filter->getName()] = $filter;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getFilters()
     {
         return $this->filters;
@@ -56,9 +57,6 @@ class Twig_Extension_Staging extends Twig_Extension
         $this->visitors[] = $visitor;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getNodeVisitors()
     {
         return $this->visitors;
@@ -66,48 +64,31 @@ class Twig_Extension_Staging extends Twig_Extension
 
     public function addTokenParser(Twig_TokenParserInterface $parser)
     {
-        $this->tokenParsers[] = $parser;
+        if (isset($this->tokenParsers[$parser->getTag()])) {
+            throw new LogicException(sprintf('Tag "%s" is already registered.', $parser->getTag()));
+        }
+
+        $this->tokenParsers[$parser->getTag()] = $parser;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getTokenParsers()
     {
         return $this->tokenParsers;
     }
 
-    public function addGlobal($name, $value)
+    public function addTest(Twig_Test $test)
     {
-        $this->globals[$name] = $value;
+        if (isset($this->tests[$test->getName()])) {
+            throw new LogicException(sprintf('Test "%s" is already registered.', $test->getTag()));
+        }
+
+        $this->tests[$test->getName()] = $test;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getGlobals()
-    {
-        return $this->globals;
-    }
-
-    public function addTest($name, $test)
-    {
-        $this->tests[$name] = $test;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getTests()
     {
         return $this->tests;
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'staging';
-    }
 }
+
+class_alias('Twig_Extension_Staging', 'Twig\Extension\StagingExtension', false);
