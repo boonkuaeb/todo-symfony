@@ -4,7 +4,7 @@ require __DIR__ . '/../vendor/autoload.php'; # including composer autoload file
 try {
     $redis = new Predis\Client(array(
         'scheme' => 'tcp',
-        'host' => 'todo-webcache.gxopva.0001.apse1.cache.amazonaws.com',
+        'host' => '{endpoint}',
 //        'host' => '127.0.0.1',
         'port' => 6379
     ));

@@ -84,6 +84,6 @@ snc_redis:
         document:
             type: predis
             alias: document_cache
-            dsn: redis://todo-webcache.gxopva.0001.apse1.cache.amazonaws.com
+            dsn: redis://{Endpoint}
             options:
                 replication: false
