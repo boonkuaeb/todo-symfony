@@ -6,8 +6,8 @@
 !app/logs/.gitkeep
 /app/phpunit.xml
 /bin/
-/vendor/
 /web/bundles/
-
+/vendor/autoload.php
+/vendor/composer/
 .idea
 .vagrant
