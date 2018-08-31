@@ -1,8 +1,6 @@
 <?php
 
 require __DIR__ . '/../vendor/autoload.php'; # including composer autoload file
-
-# making redis connection
 try {
     $redis = new Predis\Client(array(
         'scheme' => 'tcp',
@@ -11,14 +9,16 @@ try {
         'port' => 6379
     ));
 
+    echo "Server is running: ".$redis->ping();
+    echo "<br>";
 
 # working with simple string values
-    $date = date('c');
+    $date = "Test - ".date('c');
     $key = md5(__FILE__);
 
     echo $date . "<br/>";
     if (!$redis->exists($key)) {
-        $redis->set($key, $date,null,1000);
+        $redis->set($key, $date);
     }
 
     echo "<br/>cache<br/>";

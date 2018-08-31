@@ -38,11 +38,29 @@ class DefaultController extends Controller
             return $this->redirectToRoute('homepage');
         }
 
-        $tasks = $em->getRepository('AppBundle:Task')->findAll();
+        $redis = $this->container->get('snc_redis.document_cache');
+        $key = 'sample_key_4'; // it can be any_unique_id
+        $date_source = "";;
+        if($redis->exists($key)==0)
+        {
+            $date_source=  " - Use DB";
+            $tasks = $em->getRepository('AppBundle:Task')->findAll();
+            $cacheExpirationTime = 5; // cache expiration time in seconds
+
+            $serialize_task = serialize($tasks);
+            $redis->setex($key,$cacheExpirationTime, $serialize_task);
+
+
+        }else{
+            $date_source =  " - Use Cache";
+            $tasks = unserialize($redis->get($key));
+        }
+
 
         return $this->render('default/index.html.twig', [
             'form' => $form->createView(),
-            'tasks' => $tasks
+            'tasks' => $tasks,
+            'date_source' => $date_source
         ]);
     }
 
@@ -64,7 +82,7 @@ class DefaultController extends Controller
             return $this->redirectToRoute('homepage');
         }
 
-        $task->setDone(! $task->isDone());
+        $task->setDone(!$task->isDone());
         $em->flush();
 
         return $this->redirectToRoute('homepage');

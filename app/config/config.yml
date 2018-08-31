@@ -78,3 +78,12 @@ swiftmailer:
     username:  "%mailer_user%"
     password:  "%mailer_password%"
     spool:     { type: memory }
+
+snc_redis:
+    clients:
+        document:
+            type: predis
+            alias: document_cache
+            dsn: redis://todo-webcache.gxopva.0001.apse1.cache.amazonaws.com
+            options:
+                replication: false
